@@ -1,0 +1,3114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>每月與年度費用繳納檢核表</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '"Noto Sans TC"', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Custom subtle scrollbar & transitions */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .modal-enter {
+      animation: modalFadeIn 0.18s ease-out forwards;
+    }
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .toast-enter {
+      animation: toastSlideIn 0.25s ease-out forwards;
+    }
+    @keyframes toastSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== 管理人登入閘道畫面 ==================== -->
+  <div id="login-screen" class="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="modal-enter bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 p-7 sm:p-8 space-y-6 my-auto">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-lg mx-auto">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">管理人登入</h2>
+        <p class="text-xs text-slate-500">請輸入管理人帳號與密碼以存取費用繳納檢核系統</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">管理人帳號</label>
+          <input type="text" id="login-username" required autocomplete="username" placeholder="請輸入帳號" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">管理人密碼</label>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="請輸入密碼" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+        </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <label class="inline-flex items-center gap-2 text-slate-600 cursor-pointer select-none">
+            <input type="checkbox" id="login-remember" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+            <span>記住登入狀態</span>
+          </label>
+          <span id="login-default-hint" class="text-slate-400">預設：admin / 123456</span>
+        </div>
+
+        <p id="login-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl"></p>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-sm font-bold shadow-md transition-all cursor-pointer">
+          登入系統
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 頂部導覽列 ==================== -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-3">
+        <!-- 品牌標誌 -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-sm shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="truncate">
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 truncate">費用繳納檢核表</h1>
+            <p class="text-xs text-slate-500 hidden sm:block">每月 / 每年帳單追蹤、雲端證明留存與支出彙整</p>
+          </div>
+        </div>
+
+        <!-- 桌面端分頁導覽 -->
+        <nav class="hidden md:flex items-center bg-slate-100 p-1 rounded-xl">
+          <button onclick="switchTab('monthly')" id="nav-monthly" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            每月檢核表
+          </button>
+          <button onclick="switchTab('annual')" id="nav-annual" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            年度彙整報表
+          </button>
+          <button onclick="switchTab('manage')" id="nav-manage" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            費用項目管理
+          </button>
+          <button onclick="switchTab('settings')" id="nav-settings" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+            系統設定
+          </button>
+        </nav>
+
+        <!-- 右側工具按鈕（雲端狀態、提醒鈴鐺、新增費用、登出） -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button onclick="switchTab('settings')" id="header-sync-badge" class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition-colors cursor-pointer" title="資料庫同步狀態">
+            <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+            <span id="sync-text">本機模式</span>
+          </button>
+
+          <button onclick="openReminderModal()" class="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="查看繳費提醒">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span id="reminder-bell-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+          </button>
+
+          <button onclick="openBillModal()" class="inline-flex items-center gap-1.5 px-3 py-2.5 sm:px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-sm font-semibold shadow-sm transition-all cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="hidden sm:inline">新增費用</span>
+          </button>
+
+          <button onclick="logout()" class="p-2.5 rounded-xl border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-600 transition-colors cursor-pointer" title="登出系統">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 手機端分頁導覽 -->
+      <div class="flex md:hidden items-center gap-1 pb-3 overflow-x-auto">
+        <button onclick="switchTab('monthly')" id="mnav-monthly" class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap transition-all">
+          每月檢核表
+        </button>
+        <button onclick="switchTab('annual')" id="mnav-annual" class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap transition-all">
+          年度彙整
+        </button>
+        <button onclick="switchTab('manage')" id="mnav-manage" class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap transition-all">
+          項目管理
+        </button>
+        <button onclick="switchTab('settings')" id="mnav-settings" class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap transition-all">
+          系統設定
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 主內容區域 ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ==================== 分頁 1：每月檢核表 ==================== -->
+    <section id="view-monthly" class="space-y-6">
+      <!-- 到期與逾期提醒橫幅 -->
+      <div id="reminder-alert-banner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h3 id="reminder-banner-title" class="text-sm font-bold text-amber-900">繳費提醒</h3>
+            <p id="reminder-banner-desc" class="text-xs text-amber-800 mt-0.5"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="openReminderModal()" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors cursor-pointer">
+            檢視提醒清單
+          </button>
+        </div>
+      </div>
+
+      <!-- 月份切換列 -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between sm:justify-start gap-2">
+          <button onclick="changeMonth(-1)" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="上個月">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div class="px-4 text-center">
+            <h2 id="current-month-label" class="text-lg sm:text-xl font-bold text-slate-900">2026 年 11 月</h2>
+            <p class="text-xs text-slate-500">本月應繳帳單檢核清單</p>
+          </div>
+          <button onclick="changeMonth(1)" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="下個月">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 justify-end">
+          <button onclick="jumpToToday()" class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-medium transition-colors cursor-pointer">
+            回到本月
+          </button>
+          <button onclick="switchTab('annual')" class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs sm:text-sm font-medium transition-colors cursor-pointer">
+            查看年度彙整 →
+          </button>
+        </div>
+      </div>
+
+      <!-- 本月統計摘要卡片 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 預估總繳 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">本月預估總繳</span>
+            <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </span>
+          </div>
+          <p id="stat-month-estimated" class="text-2xl font-bold text-slate-900">NT$ 0</p>
+          <p id="stat-month-count-sub" class="text-xs text-slate-500 mt-1">共 0 筆應繳項目</p>
+        </div>
+
+        <!-- 已繳總計 -->
+        <div class="bg-white p-5 rounded-2xl border border-emerald-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">本月已繳金額</span>
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+          </div>
+          <p id="stat-month-paid" class="text-2xl font-bold text-emerald-600">NT$ 0</p>
+          <p id="stat-month-paid-diff" class="text-xs text-slate-500 mt-1">依實際繳納金額計算</p>
+        </div>
+
+        <!-- 待繳預估 -->
+        <div class="bg-white p-5 rounded-2xl border border-amber-200/80 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">本月待繳預估</span>
+            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+          <p id="stat-month-unpaid" class="text-2xl font-bold text-amber-600">NT$ 0</p>
+          <p id="stat-month-unpaid-sub" class="text-xs text-slate-500 mt-1">尚有 0 筆未繳納</p>
+        </div>
+
+        <!-- 完成進度 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">本月檢核進度</span>
+            <span id="stat-month-percent" class="text-sm font-bold text-indigo-600">0%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden my-2">
+            <div id="stat-month-progress-bar" class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <p id="stat-month-progress-text" class="text-xs text-slate-500">已完成 0 / 0 筆</p>
+        </div>
+      </div>
+
+      <!-- 搜尋與篩選列 -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col lg:flex-row gap-3">
+        <!-- 關鍵字搜尋 -->
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="monthly-search" oninput="renderMonthlyView()" placeholder="搜尋費用名稱、分類或備註..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+        </div>
+
+        <!-- 篩選下拉選單 -->
+        <div class="grid grid-cols-3 sm:flex gap-2">
+          <select id="monthly-filter-status" onchange="renderMonthlyView()" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            <option value="all">全部狀態</option>
+            <option value="unpaid">尚未繳費</option>
+            <option value="paid">已完成繳費</option>
+          </select>
+
+          <select id="monthly-filter-freq" onchange="renderMonthlyView()" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            <option value="all">全部週期</option>
+            <option value="monthly">每月固定</option>
+            <option value="bimonthly">每兩月固定</option>
+            <option value="yearly">每年固定</option>
+            <option value="once">單次費用</option>
+          </select>
+
+          <select id="monthly-filter-cat" onchange="renderMonthlyView()" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            <option value="all">全部分類</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 每月檢核項目清單 -->
+      <div id="monthly-bill-list" class="space-y-3">
+        <!-- 動態產生 -->
+      </div>
+    </section>
+
+    <!-- ==================== 分頁 2：年度彙整報表 ==================== -->
+    <section id="view-annual" class="hidden space-y-6">
+      <!-- 年度切換列 -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between sm:justify-start gap-2">
+          <button onclick="changeAnnualYear(-1)" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="前一年">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div class="px-4 text-center">
+            <h2 id="annual-year-label" class="text-lg sm:text-xl font-bold text-slate-900">2026 年度費用彙整</h2>
+            <p class="text-xs text-slate-500">全年預估總繳與各月已繳統計分析</p>
+          </div>
+          <button onclick="changeAnnualYear(1)" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="後一年">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <button onclick="exportAnnualCSV()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          匯出年度 CSV 報表
+        </button>
+      </div>
+
+      <!-- 年度統計摘要卡片 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">年度預估總繳</span>
+          <p id="annual-total-estimated" class="text-2xl font-bold text-slate-900 mt-2">NT$ 0</p>
+          <p class="text-xs text-slate-500 mt-1">含每月、每年與單次帳單</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-emerald-200/80 shadow-sm">
+          <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">年度累計已繳</span>
+          <p id="annual-total-paid" class="text-2xl font-bold text-emerald-600 mt-2">NT$ 0</p>
+          <p id="annual-paid-count" class="text-xs text-slate-500 mt-1">已完成 0 筆繳費</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-amber-200/80 shadow-sm">
+          <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">年度尚餘預估</span>
+          <p id="annual-total-unpaid" class="text-2xl font-bold text-amber-600 mt-2">NT$ 0</p>
+          <p id="annual-unpaid-count" class="text-xs text-slate-500 mt-1">尚餘 0 筆待繳</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-indigo-200/80 shadow-sm">
+          <span class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">月均預估支出</span>
+          <p id="annual-monthly-avg" class="text-2xl font-bold text-indigo-600 mt-2">NT$ 0</p>
+          <p class="text-xs text-slate-500 mt-1">年度預估總額 ÷ 12 個月</p>
+        </div>
+      </div>
+
+      <!-- 12 個月趨勢圖表 & 分類占比 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 12 個月長條圖 -->
+        <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">1–12 月預估與已繳對照</h3>
+              <p class="text-xs text-slate-500">點擊任意月份可直接跳轉至該月檢核表</p>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-medium">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-200 inline-block"></span>預估總繳</span>
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span>實際已繳</span>
+            </div>
+          </div>
+          <div id="annual-bar-chart" class="grid grid-cols-6 sm:grid-cols-12 gap-2 items-end h-56 pt-4 pb-2">
+            <!-- 動態產生 12 個月柱狀圖 -->
+          </div>
+        </div>
+
+        <!-- 分類支出占比 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+          <h3 class="text-base font-bold text-slate-900 mb-1">年度分類預估占比</h3>
+          <p class="text-xs text-slate-500 mb-4">依各費用類別統計全年預估金額</p>
+          <div id="annual-category-breakdown" class="space-y-3.5 flex-1 overflow-y-auto max-h-60 pr-1">
+            <!-- 動態產生 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 12 個月明細彙整表 -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-base font-bold text-slate-900">各月份收支檢核明細</h3>
+          <span class="text-xs text-slate-500">點擊列可檢視該月帳單</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="px-5 py-3.5 font-semibold">月份</th>
+                <th class="px-5 py-3.5 font-semibold text-right">應繳筆數</th>
+                <th class="px-5 py-3.5 font-semibold text-right">預估總繳</th>
+                <th class="px-5 py-3.5 font-semibold text-right">實際已繳</th>
+                <th class="px-5 py-3.5 font-semibold text-right">待繳預估</th>
+                <th class="px-5 py-3.5 font-semibold text-center">進度</th>
+              </tr>
+            </thead>
+            <tbody id="annual-monthly-table" class="divide-y divide-slate-100">
+              <!-- 動態產生 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 分頁 3：費用項目管理 ==================== -->
+    <section id="view-manage" class="hidden space-y-6">
+      <!-- 頂部搜尋與資料備份區 -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">所有固定與單次費用項目</h2>
+            <p class="text-xs text-slate-500">集中查詢、新增、修改或刪除每月／每年應繳項目</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="exportBackupJSON()" class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer">
+              備份資料 (JSON)
+            </button>
+            <label class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer">
+              匯入還原
+              <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+            </label>
+            <button onclick="confirmResetDemo()" class="px-3.5 py-2 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors cursor-pointer">
+              重設範例資料
+            </button>
+          </div>
+        </div>
+
+        <!-- 搜尋與篩選 -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="manage-search" oninput="renderManageView()" placeholder="搜尋項目名稱、備註..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+          </div>
+          <select id="manage-filter-freq" onchange="renderManageView()" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            <option value="all">全部週期</option>
+            <option value="monthly">每月固定</option>
+            <option value="bimonthly">每兩月固定</option>
+            <option value="yearly">每年固定</option>
+            <option value="once">單次費用</option>
+          </select>
+          <select id="manage-filter-cat" onchange="renderManageView()" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+            <option value="all">全部分類</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 項目管理清單 -->
+      <div id="manage-bill-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- 動態產生 -->
+      </div>
+    </section>
+
+    <!-- ==================== 分頁 4：系統設定 ==================== -->
+    <section id="view-settings" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- 卡片 1：自訂費用分類 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">自訂費用分類</h3>
+            <p class="text-xs text-slate-500 mt-0.5">新增或管理您的專屬費用類別與標籤顏色</p>
+          </div>
+
+          <form onsubmit="addCustomCategory(event)" class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="new-cat-name" required maxlength="16" placeholder="輸入新分類名稱（例如：孝親費、毛孩支出）" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            <select id="new-cat-color" class="px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+              <option value="indigo">靛藍色</option>
+              <option value="sky">天空藍</option>
+              <option value="teal">湖水綠</option>
+              <option value="emerald">翡翠綠</option>
+              <option value="amber">琥珀黃</option>
+              <option value="orange">活力橘</option>
+              <option value="rose">玫瑰紅</option>
+              <option value="pink">粉紅色</option>
+              <option value="violet">紫羅蘭</option>
+              <option value="slate">質感灰</option>
+            </select>
+            <button type="submit" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shrink-0 cursor-pointer">
+              新增分類
+            </button>
+          </form>
+
+          <div id="settings-category-list" class="flex flex-wrap gap-2 pt-2">
+            <!-- 動態產生分類清單 -->
+          </div>
+        </div>
+
+        <!-- 卡片 2：提醒通知設定 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">提醒通知設定</h3>
+            <p class="text-xs text-slate-500 mt-0.5">設定帳單到期前的提前提醒天數與通知方式</p>
+          </div>
+
+          <div class="space-y-3.5">
+            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
+              <div>
+                <span class="text-sm font-semibold text-slate-800 block">啟用到期提醒功能</span>
+                <span class="text-xs text-slate-500">顯示即將到期與已逾期的帳單警示</span>
+              </div>
+              <input type="checkbox" id="set-remind-enabled" onchange="saveReminderSettings()" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
+            </label>
+
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 gap-3">
+              <div>
+                <span class="text-sm font-semibold text-slate-800 block">提前提醒天數</span>
+                <span class="text-xs text-slate-500">在截止日前幾天開始標示提醒</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <input type="number" id="set-remind-days" min="1" max="30" onchange="saveReminderSettings()" class="w-20 px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-center font-semibold bg-white" />
+                <span class="text-xs text-slate-600 font-medium">天前</span>
+              </div>
+            </div>
+
+            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
+              <div>
+                <span class="text-sm font-semibold text-slate-800 block">每月檢核表頂部提醒橫幅</span>
+                <span class="text-xs text-slate-500">有未繳且即將到期／逾期帳單時自動顯示橫幅</span>
+              </div>
+              <input type="checkbox" id="set-remind-banner" onchange="saveReminderSettings()" class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
+            </label>
+
+            <div class="flex flex-wrap items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 gap-2">
+              <div>
+                <span class="text-sm font-semibold text-slate-800 block">瀏覽器桌面推播通知</span>
+                <span id="browser-notify-status" class="text-xs text-slate-500">需授權瀏覽器通知權限</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="requestBrowserNotification()" class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold cursor-pointer">
+                  授權並測試通知
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卡片 3：Google Sheet 雲端資料庫 + Google Drive 證明存檔設定 -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Google Sheet 資料庫 & 雲端硬碟證明存檔設定</h3>
+              <p class="text-xs text-slate-500 mt-0.5">連線後，帳務資料將同步至 Google 試算表，上傳的繳費證明會自動存入該試算表所在資料夾內的「費用繳費證明 / 年份」子資料夾</p>
+            </div>
+            <span id="gs-status-pill" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 self-start sm:self-auto">
+              尚未設定連線
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Google Apps Script Web App URL</label>
+              <input type="url" id="gs-url" placeholder="https://script.google.com/macros/s/....../exec" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">存取密鑰 Token（選填）</label>
+              <input type="text" id="gs-token" placeholder="與 Apps Script 一致即可" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+              <input type="checkbox" id="gs-autosync" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+              <span>資料異動時自動同步至 Google Sheet（且證明直接上傳至 Google 雲端硬碟）</span>
+            </label>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="saveGoogleSheetConfig()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer">
+                儲存設定
+              </button>
+              <button type="button" onclick="loadFromGoogleSheet()" class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer">
+                從雲端載入
+              </button>
+              <button type="button" onclick="syncToGoogleSheet(true)" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer">
+                立即上傳同步
+              </button>
+            </div>
+          </div>
+
+          <!-- Google Apps Script 程式碼教學折疊區 -->
+          <details class="bg-slate-50 rounded-xl border border-slate-200/80 p-4">
+            <summary class="text-xs font-bold text-indigo-700 cursor-pointer select-none">
+              展開：如何設定 Google Sheet 資料庫與 Google 雲端硬碟自動存檔？（附最新版 Apps Script 程式碼）
+            </summary>
+            <div class="mt-3 space-y-3 text-xs text-slate-600 leading-relaxed">
+              <ol class="list-decimal list-inside space-y-1">
+                <li>開啟您的 <strong>Google 試算表</strong>（建議先放在一個專屬的雲端硬碟資料夾中），點選「<strong>擴充功能</strong>」→「<strong>Apps Script</strong>」。</li>
+                <li>將下方程式碼複製並覆蓋編輯器內的原有內容，按下儲存（可將 <code>SECRET_TOKEN</code> 改為您自訂的密鑰）。</li>
+                <li><strong>首次部署</strong>：點選「部署」→「新增部署作業」→ 類型選「網頁應用程式」，執行身分選「<strong>我</strong>」，誰可以存取選「<strong>所有人</strong>」，並完成 <strong>Google 雲端硬碟存取授權</strong>。</li>
+                <li><strong>若先前已部署過（更新程式碼）</strong>：點選「部署」→「管理部署作業」→ 點擊鉛筆編輯 → 版本選擇「<strong>建立新版本</strong>」→ 按下部署並重新授權 Google 雲端硬碟權限（網址不會改變！）。</li>
+                <li>將網頁應用程式網址貼回上方並儲存，之後上傳的繳費證明就會自動存入該試算表同層資料夾下的 <code>費用繳費證明 / YYYY年</code>！</li>
+              </ol>
+              <div class="relative">
+                <button type="button" onclick="copyGasCode()" class="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold shadow-xs cursor-pointer">
+                  複製最新版程式碼
+                </button>
+                <pre id="gas-code-block" class="bg-slate-900 text-slate-100 p-4 rounded-xl text-[11px] overflow-x-auto max-h-72 font-mono"></pre>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- 卡片 4：管理人帳號與密碼設定 -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">管理人帳號與安全設定</h3>
+              <p class="text-xs text-slate-500 mt-0.5">修改登入帳號與密碼，保護您的個人帳務資料</p>
+            </div>
+            <span id="admin-current-user" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full self-start sm:self-auto">
+              目前登入：admin
+            </span>
+          </div>
+
+          <form onsubmit="saveAdminAccount(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">新管理人帳號</label>
+              <input type="text" id="admin-new-user" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">目前密碼（驗證用）</label>
+              <input type="password" id="admin-old-pass" required placeholder="請輸入目前密碼" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">新密碼（若不變更請留空）</label>
+              <input type="password" id="admin-new-pass" placeholder="輸入新密碼（至少 4 碼）" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+            </div>
+            <div class="sm:col-span-3 flex justify-end">
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold cursor-pointer">
+                更新管理人帳號密碼
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== 彈窗 1：新增 / 編輯費用項目 ==================== -->
+  <div id="bill-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="modal-enter bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden my-auto">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="bill-modal-title" class="text-lg font-bold text-slate-900">新增費用項目</h3>
+        <button onclick="closeBillModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="bill-form" onsubmit="saveBillForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="bill-id" />
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">費用名稱 <span class="text-rose-500">*</span></label>
+          <input type="text" id="bill-name" required placeholder="例如：國泰世華信用卡、中華電信月租費、汽車保費" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">費用分類</label>
+            <select id="bill-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+              <!-- 由 JS 動態填入 -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">預估金額 (NT$) <span class="text-rose-500">*</span></label>
+            <input type="number" id="bill-amount" required min="0" step="1" placeholder="例如：1500" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">繳費週期</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="bill-freq" value="monthly" checked onchange="toggleFrequencyFields()" class="peer hidden" />
+              <div class="py-2.5 px-2 text-center rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition-all">
+                每月固定
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="bill-freq" value="bimonthly" onchange="toggleFrequencyFields()" class="peer hidden" />
+              <div class="py-2.5 px-2 text-center rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition-all">
+                每兩月固定
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="bill-freq" value="yearly" onchange="toggleFrequencyFields()" class="peer hidden" />
+              <div class="py-2.5 px-2 text-center rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition-all">
+                每年固定
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="bill-freq" value="once" onchange="toggleFrequencyFields()" class="peer hidden" />
+              <div class="py-2.5 px-2 text-center rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-600 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition-all">
+                單次費用
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 週期對應日期設定 -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
+          <div id="field-due-year" class="hidden">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">繳費年份</label>
+            <input type="number" id="bill-due-year" min="2020" max="2099" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white" />
+          </div>
+          <div id="field-due-month" class="hidden">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">繳費月份</label>
+            <select id="bill-due-month" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+              <option value="1">1 月</option><option value="2">2 月</option><option value="3">3 月</option>
+              <option value="4">4 月</option><option value="5">5 月</option><option value="6">6 月</option>
+              <option value="7">7 月</option><option value="8">8 月</option><option value="9">9 月</option>
+              <option value="10">10 月</option><option value="11">11 月</option><option value="12">12 月</option>
+            </select>
+          </div>
+          <div id="field-bimonthly-parity" class="hidden sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">每兩月帳單月份（如台電／自來水）</label>
+            <select id="bill-bimonthly-parity" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+              <option value="odd">單數月繳納（1, 3, 5, 7, 9, 11 月）</option>
+              <option value="even">雙數月繳納（2, 4, 6, 8, 10, 12 月）</option>
+            </select>
+          </div>
+          <div class="sm:col-span-1" id="field-due-day-wrapper">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">繳費截止日 (1–31日)</label>
+            <input type="number" id="bill-due-day" required min="1" max="31" value="15" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">備註（繳費方式、帳號末碼等）</label>
+          <textarea id="bill-note" rows="2" placeholder="例如：網銀轉帳、自動扣款、超商條碼繳費" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeBillModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold cursor-pointer">
+            取消
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm cursor-pointer">
+            儲存項目
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 2：完成繳費與上傳證明 ==================== -->
+  <div id="payment-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="modal-enter bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden my-auto">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 id="payment-modal-title" class="text-lg font-bold text-slate-900">登錄繳費紀錄</h3>
+          <p id="payment-modal-subtitle" class="text-xs text-slate-500 mt-0.5"></p>
+        </div>
+        <button onclick="closePaymentModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="payment-form" onsubmit="savePaymentForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="pay-bill-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">實際繳納金額 (NT$) <span class="text-rose-500">*</span></label>
+            <input type="number" id="pay-amount" required min="0" step="1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500" />
+            <p id="pay-estimated-hint" class="text-xs text-slate-400 mt-1"></p>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">實際繳費日期 <span class="text-rose-500">*</span></label>
+            <input type="date" id="pay-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+          </div>
+        </div>
+
+        <!-- 上傳繳費證明區 -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-sm font-semibold text-slate-700">上傳繳費證明（截圖、收據照片或 PDF）</label>
+            <span id="proof-dest-badge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">存於本機</span>
+          </div>
+          <div id="proof-dropzone" class="relative border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-4 text-center transition-colors bg-slate-50/70">
+            <input type="file" id="pay-proof-input" accept="image/*,.pdf" onchange="handleProofFileSelect(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <div id="proof-upload-placeholder" class="py-2 pointer-events-none">
+              <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p class="text-sm font-medium text-slate-700">點擊選擇檔案，或將證明拖曳至此</p>
+              <p id="proof-upload-hint" class="text-xs text-slate-400 mt-1">支援 JPG、PNG、WEBP 及 PDF</p>
+            </div>
+
+            <!-- 預覽區域 -->
+            <div id="proof-preview-box" class="hidden relative z-10 flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 text-left">
+              <img id="proof-preview-img" class="w-16 h-16 object-cover rounded-lg border border-slate-100 hidden" alt="繳費證明預覽" />
+              <div id="proof-preview-pdf" class="w-16 h-16 rounded-lg bg-rose-50 text-rose-600 flex flex-col items-center justify-center shrink-0 hidden">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span class="text-[10px] font-bold">PDF</span>
+              </div>
+              <div id="proof-preview-drive" class="w-16 h-16 rounded-lg bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center shrink-0 hidden">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                </svg>
+                <span class="text-[10px] font-bold">雲端硬碟</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p id="proof-preview-name" class="text-sm font-semibold text-slate-800 truncate"></p>
+                <p id="proof-preview-sub" class="text-xs text-emerald-600 mt-0.5">已準備就緒，儲存後即可隨時檢視</p>
+              </div>
+              <button type="button" onclick="clearPendingProof()" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer" title="移除檔案">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">本次繳費備註</label>
+          <input type="text" id="pay-note" placeholder="例如：已於台銀 App 轉帳、交易序號末五碼..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+          <button type="button" id="btn-mark-unpaid" onclick="markAsUnpaidFromModal()" class="hidden px-3.5 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 text-sm font-semibold cursor-pointer">
+            改回未繳狀態
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closePaymentModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold cursor-pointer">
+              取消
+            </button>
+            <button type="submit" id="btn-save-payment" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-wait text-white text-sm font-semibold shadow-sm cursor-pointer">
+              確認完成繳費
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 3：繳費證明檢視器 ==================== -->
+  <div id="proof-viewer-modal" class="fixed inset-0 z-50 hidden bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="modal-enter bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h3 id="viewer-title" class="text-base font-bold text-slate-900 truncate">繳費證明</h3>
+          <p id="viewer-subtitle" class="text-xs text-slate-500 truncate"></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <a id="viewer-drive-btn" href="#" target="_blank" rel="noopener noreferrer" class="hidden px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition-colors">
+            在雲端硬碟開啟
+          </a>
+          <a id="viewer-download-btn" href="#" download class="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors">
+            下載檔案
+          </a>
+          <button onclick="closeProofViewer()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="viewer-body" class="p-4 bg-slate-100 flex-1 overflow-auto flex items-center justify-center min-h-[300px]">
+        <!-- 動態顯示圖片、PDF 或 Google Drive 預覽 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 4：通用確認對話框 ==================== -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="modal-enter bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 id="confirm-title" class="text-base font-bold text-slate-900">確認操作</h3>
+          <p id="confirm-message" class="text-sm text-slate-600 mt-1"></p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold cursor-pointer">
+          取消
+        </button>
+        <button id="confirm-ok-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-sm cursor-pointer">
+          確定刪除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 5：到期與逾期提醒清單 ==================== -->
+  <div id="reminder-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="modal-enter bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">本月待繳提醒清單</h3>
+          <p id="reminder-modal-sub" class="text-xs text-slate-500 mt-0.5"></p>
+        </div>
+        <button onclick="closeReminderModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="reminder-modal-list" class="p-5 overflow-y-auto space-y-3 flex-1">
+        <!-- 動態產生 -->
+      </div>
+      <div class="px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <button onclick="closeReminderModal(); switchTab('settings')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+          調整提醒天數設定 →
+        </button>
+        <button onclick="closeReminderModal()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Toast 提示容器 ==================== -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+  <!-- ==================== JavaScript 核心邏輯 ==================== -->
+  <script>
+    // =========================================================================
+    // 1. 常數設定與分類樣式
+    // =========================================================================
+    const STORAGE_KEY = 'tw_bill_checklist_app_v2';
+    const AUTH_SESSION_KEY = 'tw_bill_checklist_auth_session';
+
+    const COLOR_PALETTE = {
+      indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-200', bar: 'bg-indigo-500' },
+      sky: { badge: 'bg-sky-50 text-sky-700 border-sky-200', bar: 'bg-sky-500' },
+      teal: { badge: 'bg-teal-50 text-teal-700 border-teal-200', bar: 'bg-teal-500' },
+      emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
+      amber: { badge: 'bg-amber-50 text-amber-700 border-amber-200', bar: 'bg-amber-500' },
+      orange: { badge: 'bg-orange-50 text-orange-700 border-orange-200', bar: 'bg-orange-500' },
+      rose: { badge: 'bg-rose-50 text-rose-700 border-rose-200', bar: 'bg-rose-500' },
+      pink: { badge: 'bg-pink-50 text-pink-700 border-pink-200', bar: 'bg-pink-500' },
+      violet: { badge: 'bg-violet-50 text-violet-700 border-violet-200', bar: 'bg-violet-500' },
+      slate: { badge: 'bg-slate-100 text-slate-700 border-slate-200', bar: 'bg-slate-500' },
+    };
+
+    const DEFAULT_CATEGORIES = [
+      { id: '信用卡', label: '信用卡費', color: 'indigo' },
+      { id: '電信網路', label: '電信／網路費', color: 'sky' },
+      { id: '水電瓦斯', label: '水電／瓦斯費', color: 'amber' },
+      { id: '保險費', label: '保險費', color: 'emerald' },
+      { id: '居住管理', label: '房租／房貸／管理費', color: 'violet' },
+      { id: '訂閱服務', label: '影音／軟體訂閱', color: 'pink' },
+      { id: '稅金規費', label: '稅金／汽機車規費', color: 'rose' },
+      { id: '其他', label: '其他費用', color: 'slate' },
+    ];
+
+    const FREQ_LABELS = {
+      monthly: { text: '每月', cls: 'bg-blue-50 text-blue-700' },
+      bimonthly: { text: '每兩月', cls: 'bg-teal-50 text-teal-700' },
+      yearly: { text: '每年', cls: 'bg-purple-50 text-purple-700' },
+      once: { text: '單次', cls: 'bg-orange-50 text-orange-700' },
+    };
+
+    const GAS_TEMPLATE_CODE = [
+      '// Google Apps Script - 費用繳納檢核表資料庫 + 雲端硬碟存檔 API (v2)',
+      'const SECRET_TOKEN = ""; // 建議設定自訂密鑰，並於網頁端填入相同 Token',
+      'const PROOF_FOLDER_NAME = "費用繳費證明"; // 自動建立在該試算表同層資料夾下',
+      'const ALLOW_LINK_PREVIEW = true; // true: 讓網頁內可直接預覽雲端圖片/PDF；false: 僅限本人登入 Google 帳號檢視',
+      '',
+      'function getStoreSheet() {',
+      '  const ss = SpreadsheetApp.getActiveSpreadsheet();',
+      '  let sheet = ss.getSheetByName("BillTrackerDB");',
+      '  if (!sheet) {',
+      '    sheet = ss.insertSheet("BillTrackerDB");',
+      '    sheet.getRange("A1:B1").setValues([["Key", "Value"]]);',
+      '  }',
+      '  return sheet;',
+      '}',
+      '',
+      '// 取得或建立「試算表同層資料夾 / 費用繳費證明 / YYYY年」資料夾',
+      'function getProofFolder(year) {',
+      '  const ss = SpreadsheetApp.getActiveSpreadsheet();',
+      '  const ssFile = DriveApp.getFileById(ss.getId());',
+      '  const parents = ssFile.getParents();',
+      '  const parentFolder = parents.hasNext() ? parents.next() : DriveApp.getRootFolder();',
+      '',
+      '  let rootProofFolder;',
+      '  const iter = parentFolder.getFoldersByName(PROOF_FOLDER_NAME);',
+      '  if (iter.hasNext()) {',
+      '    rootProofFolder = iter.next();',
+      '  } else {',
+      '    rootProofFolder = parentFolder.createFolder(PROOF_FOLDER_NAME);',
+      '  }',
+      '',
+      '  if (!year) return rootProofFolder;',
+      '  const yearName = String(year) + "年";',
+      '  const yearIter = rootProofFolder.getFoldersByName(yearName);',
+      '  return yearIter.hasNext() ? yearIter.next() : rootProofFolder.createFolder(yearName);',
+      '}',
+      '',
+      'function doGet(e) {',
+      '  const token = (e && e.parameter && e.parameter.token) || "";',
+      '  if (SECRET_TOKEN && token !== SECRET_TOKEN) {',
+      '    return jsonResponse({ ok: false, error: "Invalid token" });',
+      '  }',
+      '  const sheet = getStoreSheet();',
+      '  const data = sheet.getRange("A2:B10").getValues();',
+      '  const map = {};',
+      '  data.forEach(function(row) { if (row[0]) map[row[0]] = row[1]; });',
+      '  return jsonResponse({',
+      '    ok: true,',
+      '    bills: map.bills ? JSON.parse(map.bills) : [],',
+      '    payments: map.payments ? JSON.parse(map.payments) : {},',
+      '    categories: map.categories ? JSON.parse(map.categories) : null,',
+      '    reminderSettings: map.reminderSettings ? JSON.parse(map.reminderSettings) : null',
+      '  });',
+      '}',
+      '',
+      'function doPost(e) {',
+      '  try {',
+      '    const body = JSON.parse(e.postData.contents);',
+      '    if (SECRET_TOKEN && body.token !== SECRET_TOKEN) {',
+      '      return jsonResponse({ ok: false, error: "Invalid token" });',
+      '    }',
+      '',
+      '    // 動作 1：上傳繳費證明檔案至 Google 雲端硬碟',
+      '    if (body.action === "uploadProof") {',
+      '      const base64Data = String(body.fileData || "").split(",").pop();',
+      '      const mimeType = body.mimeType || "image/jpeg";',
+      '      const safeBill = String(body.billName || "帳單").replace(/[\\\\/:*?"<>|]/g, "_");',
+      '      const origName = String(body.fileName || "proof.jpg").replace(/[\\\\/:*?"<>|]/g, "_");',
+      '      const ymPrefix = (body.year || "") + "-" + ("0" + (body.month || "")).slice(-2);',
+      '      const finalName = ymPrefix + "_" + safeBill + "_" + origName;',
+      '',
+      '      const bytes = Utilities.base64Decode(base64Data);',
+      '      const blob = Utilities.newBlob(bytes, mimeType, finalName);',
+      '      const folder = getProofFolder(body.year);',
+      '      const file = folder.createFile(blob);',
+      '',
+      '      if (ALLOW_LINK_PREVIEW) {',
+      '        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);',
+      '      }',
+      '',
+      '      const fileId = file.getId();',
+      '      return jsonResponse({',
+      '        ok: true,',
+      '        fileId: fileId,',
+      '        fileName: finalName,',
+      '        mimeType: mimeType,',
+      '        fileUrl: file.getUrl(),',
+      '        previewUrl: "https://drive.google.com/file/d/" + fileId + "/preview",',
+      '        downloadUrl: "https://drive.google.com/uc?export=download&id=" + fileId',
+      '      });',
+      '    }',
+      '',
+      '    // 動作 2：同步帳單與繳費紀錄至 Google 試算表',
+      '    const sheet = getStoreSheet();',
+      '    const rows = [',
+      '      ["bills", JSON.stringify(body.bills || [])],',
+      '      ["payments", JSON.stringify(body.payments || {})],',
+      '      ["categories", JSON.stringify(body.categories || [])],',
+      '      ["reminderSettings", JSON.stringify(body.reminderSettings || {})],',
+      '      ["updatedAt", new Date().toISOString()]',
+      '    ];',
+      '    sheet.getRange(2, 1, rows.length, 2).setValues(rows);',
+      '    return jsonResponse({ ok: true, updatedAt: new Date().toISOString() });',
+      '  } catch (err) {',
+      '    return jsonResponse({ ok: false, error: String(err) });',
+      '  }',
+      '}',
+      '',
+      'function jsonResponse(obj) {',
+      '  return ContentService.createTextOutput(JSON.stringify(obj))',
+      '    .setMimeType(ContentService.MimeType.JSON);',
+      '}'
+    ].join('\n');
+
+    // =========================================================================
+    // 2. 應用程式狀態 (State)
+    // =========================================================================
+    const now = new Date();
+    const state = {
+      activeTab: 'monthly', // 'monthly' | 'annual' | 'manage' | 'settings'
+      viewYear: now.getFullYear(),
+      viewMonth: now.getMonth() + 1, // 1-12
+      annualYear: now.getFullYear(),
+      isAuthenticated: false,
+      bills: [],
+      // payments[key] -> { paid, actualAmount, paidDate, proofData, proofDriveId, proofUrl, proofPreviewUrl, proofDownloadUrl, proofStorage, proofName, proofType, note }
+      payments: {},
+      categories: [],
+      reminderSettings: {
+        enabled: true,
+        daysBefore: 5,
+        showBanner: true,
+      },
+      auth: {
+        username: 'admin',
+        passwordHash: '', // 初始化時填入預設 '123456' 的雜湊
+        isDefault: true,
+      },
+      googleSheet: {
+        url: '',
+        token: '',
+        autoSync: false,
+        lastSync: null,
+      },
+    };
+
+    // 暫存目前繳費彈窗中的證明檔案與同步防抖計時器
+    let pendingProof = null; // { data?, driveId?, url?, previewUrl?, downloadUrl?, storage, name, type, isNew? } | null
+    let confirmCallback = null;
+    let autoSyncTimer = null;
+
+    // 簡易穩定雜湊函式（支援 file:// 與 https:// 環境）
+    function hashPassword(text) {
+      let h1 = 0xdeadbeef ^ text.length;
+      let h2 = 0x41c6ce57 ^ text.length;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+    }
+
+    // =========================================================================
+    // 3. 預設範例資料與本地儲存 (LocalStorage)
+    // =========================================================================
+    function createDemoData() {
+      const y = now.getFullYear();
+      const m = now.getMonth() + 1;
+      const todayStr = formatDateISO(now);
+
+      const demoBills = [
+        {
+          id: 'bill_cc_1',
+          name: '國泰世華 CUBE 信用卡費',
+          category: '信用卡',
+          frequency: 'monthly',
+          dueMonth: null,
+          dueYear: null,
+          dueDay: 15,
+          estimatedAmount: 16500,
+          note: '網銀轉帳或自動扣款，依每月帳單實際金額調整',
+        },
+        {
+          id: 'bill_tel_1',
+          name: '中華電信行動月租費',
+          category: '電信網路',
+          frequency: 'monthly',
+          dueMonth: null,
+          dueYear: null,
+          dueDay: 20,
+          estimatedAmount: 999,
+          note: '5G 資費方案，可透過中華電信 App 繳納',
+        },
+        {
+          id: 'bill_util_1',
+          name: '台電電費／自來水費',
+          category: '水電瓦斯',
+          frequency: 'bimonthly',
+          bimonthlyParity: m % 2 === 1 ? 'odd' : 'even',
+          dueMonth: null,
+          dueYear: null,
+          dueDay: 25,
+          estimatedAmount: 2400,
+          note: '每兩月一期，台灣 Pay 或超商條碼繳費',
+        },
+        {
+          id: 'bill_home_1',
+          name: '社區大樓管理費',
+          category: '居住管理',
+          frequency: 'monthly',
+          dueMonth: null,
+          dueYear: null,
+          dueDay: 10,
+          estimatedAmount: 2500,
+          note: '轉帳至管委會帳戶',
+        },
+        {
+          id: 'bill_sub_1',
+          name: 'Netflix + Spotify 家庭方案',
+          category: '訂閱服務',
+          frequency: 'monthly',
+          dueMonth: null,
+          dueYear: null,
+          dueDay: 5,
+          estimatedAmount: 658,
+          note: '信用卡自動扣款',
+        },
+        {
+          id: 'bill_ins_1',
+          name: '年度人身壽險與醫療保費',
+          category: '保險費',
+          frequency: 'yearly',
+          dueMonth: m,
+          dueYear: null,
+          dueDay: 28,
+          estimatedAmount: 28600,
+          note: '年繳保費，完成後請務必上傳電子保費收據',
+        },
+        {
+          id: 'bill_tax_1',
+          name: '汽車牌照稅',
+          category: '稅金規費',
+          frequency: 'yearly',
+          dueMonth: 4,
+          dueYear: null,
+          dueDay: 30,
+          estimatedAmount: 7120,
+          note: '每年 4 月開徵，可線上查繳',
+        },
+        {
+          id: 'bill_tax_2',
+          name: '汽機車燃料使用費',
+          category: '稅金規費',
+          frequency: 'yearly',
+          dueMonth: 7,
+          dueYear: null,
+          dueDay: 31,
+          estimatedAmount: 4800,
+          note: '每年 7 月監理服務網繳納',
+        },
+      ];
+
+      const demoPayments = {};
+      demoPayments[`bill_home_1_${y}_${m}`] = {
+        paid: true,
+        actualAmount: 2500,
+        paidDate: `${y}-${String(m).padStart(2, '0')}-05`,
+        proofData: null,
+        proofName: null,
+        proofType: null,
+        note: '已於網銀轉帳完成',
+      };
+      demoPayments[`bill_sub_1_${y}_${m}`] = {
+        paid: true,
+        actualAmount: 658,
+        paidDate: todayStr,
+        proofData: null,
+        proofName: null,
+        proofType: null,
+        note: '信用卡自動扣款成功',
+      };
+
+      return { bills: demoBills, payments: demoPayments };
+    }
+
+    function loadData() {
+      state.auth.passwordHash = hashPassword('123456');
+      state.categories = DEFAULT_CATEGORIES.map((c) => ({ ...c }));
+
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('tw_bill_checklist_app_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state.bills = Array.isArray(parsed.bills) ? parsed.bills : [];
+          state.payments = parsed.payments && typeof parsed.payments === 'object' ? parsed.payments : {};
+          if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+            state.categories = parsed.categories;
+          }
+          if (parsed.reminderSettings) {
+            state.reminderSettings = { ...state.reminderSettings, ...parsed.reminderSettings };
+          }
+          if (parsed.auth && parsed.auth.username && parsed.auth.passwordHash) {
+            state.auth = { ...state.auth, ...parsed.auth };
+          }
+          if (parsed.googleSheet) {
+            state.googleSheet = { ...state.googleSheet, ...parsed.googleSheet };
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('讀取本地資料失敗:', err);
+      }
+      const demo = createDemoData();
+      state.bills = demo.bills;
+      state.payments = demo.payments;
+      saveData(false);
+    }
+
+    function saveData(triggerCloudSync = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          bills: state.bills,
+          payments: state.payments,
+          categories: state.categories,
+          reminderSettings: state.reminderSettings,
+          auth: state.auth,
+          googleSheet: state.googleSheet,
+        }));
+        if (triggerCloudSync && state.googleSheet.autoSync && state.googleSheet.url) {
+          clearTimeout(autoSyncTimer);
+          autoSyncTimer = setTimeout(() => syncToGoogleSheet(false), 1200);
+        }
+        return true;
+      } catch (err) {
+        console.error('儲存資料失敗:', err);
+        showToast('瀏覽器儲存空間已滿！建議連線 Google 雲端硬碟存檔或先匯出 JSON 備份。', 'error');
+        return false;
+      }
+    }
+
+    // =========================================================================
+    // 4. 工具函式 (Formatting, Queries)
+    // =========================================================================
+    function formatCurrency(amount) {
+      const num = Number(amount) || 0;
+      return 'NT$ ' + num.toLocaleString('zh-TW');
+    }
+
+    function formatDateISO(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getCategoryMeta(catId) {
+      const found = state.categories.find((c) => c.id === catId) || state.categories[state.categories.length - 1] || { id: catId, label: catId || '其他', color: 'slate' };
+      const palette = COLOR_PALETTE[found.color] || COLOR_PALETTE.slate;
+      return { ...found, ...palette };
+    }
+
+    function getPaymentKey(billId, year, month) {
+      return `${billId}_${year}_${month}`;
+    }
+
+    function hasPaymentProof(rec) {
+      return Boolean(rec && (rec.proofData || rec.proofDriveId || rec.proofUrl));
+    }
+
+    // 取得指定年份與月份應該出現的費用項目清單
+    function getBillsForMonth(year, month) {
+      return state.bills
+        .filter((b) => {
+          if (b.frequency === 'monthly') return true;
+          if (b.frequency === 'bimonthly') {
+            const isOddMonth = Number(month) % 2 === 1;
+            return b.bimonthlyParity === 'even' ? !isOddMonth : isOddMonth;
+          }
+          if (b.frequency === 'yearly') return Number(b.dueMonth) === Number(month);
+          if (b.frequency === 'once') return Number(b.dueYear) === Number(year) && Number(b.dueMonth) === Number(month);
+          return false;
+        })
+        .sort((a, b) => (a.dueDay || 1) - (b.dueDay || 1));
+    }
+
+    // 計算指定月份的統計數字
+    function calcMonthStats(year, month) {
+      const bills = getBillsForMonth(year, month);
+      let estimatedTotal = 0;
+      let paidActualTotal = 0;
+      let unpaidEstimatedTotal = 0;
+      let paidCount = 0;
+
+      bills.forEach((b) => {
+        const est = Number(b.estimatedAmount) || 0;
+        estimatedTotal += est;
+        const rec = state.payments[getPaymentKey(b.id, year, month)];
+        if (rec && rec.paid) {
+          paidCount += 1;
+          paidActualTotal += Number(rec.actualAmount ?? est);
+        } else {
+          unpaidEstimatedTotal += est;
+        }
+      });
+
+      const totalCount = bills.length;
+      const percent = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
+
+      return {
+        bills,
+        totalCount,
+        paidCount,
+        unpaidCount: totalCount - paidCount,
+        estimatedTotal,
+        paidActualTotal,
+        unpaidEstimatedTotal,
+        percent,
+      };
+    }
+
+    // 判斷到期日狀態（逾期、即將到期、正常）
+    function getDueStatusBadge(year, month, dueDay, isPaid) {
+      if (isPaid || !state.reminderSettings.enabled) return '';
+      const maxDay = new Date(year, month, 0).getDate();
+      const clampedDay = Math.min(dueDay || 1, maxDay);
+      const dueDate = new Date(year, month - 1, clampedDay, 23, 59, 59);
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const diffDays = Math.ceil((dueDate - todayStart) / (1000 * 60 * 60 * 24));
+      const daysBefore = Math.max(1, Number(state.reminderSettings.daysBefore) || 5);
+
+      if (diffDays < 0) {
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">已逾期 ${Math.abs(diffDays)} 天</span>`;
+      }
+      if (diffDays === 0) {
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">今日截止</span>`;
+      }
+      if (diffDays <= daysBefore) {
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">剩 ${diffDays} 天到期</span>`;
+      }
+      return '';
+    }
+
+    // =========================================================================
+    // 4.5 管理人登入與登出驗證
+    // =========================================================================
+    function checkAuthSession() {
+      const savedSession = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(AUTH_SESSION_KEY);
+      if (savedSession === state.auth.username + ':' + state.auth.passwordHash) {
+        state.isAuthenticated = true;
+        document.getElementById('login-screen').classList.add('hidden');
+        onLoginSuccess(false);
+      } else {
+        state.isAuthenticated = false;
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('login-default-hint').classList.toggle('hidden', !state.auth.isDefault);
+      }
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const remember = document.getElementById('login-remember').checked;
+      const errEl = document.getElementById('login-error');
+
+      if (username === state.auth.username && hashPassword(password) === state.auth.passwordHash) {
+        errEl.classList.add('hidden');
+        state.isAuthenticated = true;
+        const token = state.auth.username + ':' + state.auth.passwordHash;
+        if (remember) {
+          localStorage.setItem(AUTH_SESSION_KEY, token);
+        } else {
+          sessionStorage.setItem(AUTH_SESSION_KEY, token);
+          localStorage.removeItem(AUTH_SESSION_KEY);
+        }
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('login-password').value = '';
+        onLoginSuccess(true);
+      } else {
+        errEl.textContent = '帳號或密碼錯誤，請重新輸入。';
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function onLoginSuccess(showWelcome) {
+      updateSyncBadge();
+      switchTab(state.activeTab || 'monthly');
+      updateReminderIndicators();
+      if (showWelcome) {
+        showToast(`歡迎回來，${state.auth.username}！`, 'success');
+        sendBrowserReminderNotifications();
+      }
+    }
+
+    function logout() {
+      state.isAuthenticated = false;
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('login-default-hint').classList.toggle('hidden', !state.auth.isDefault);
+      showToast('已安全登出系統', 'info');
+    }
+
+    function saveAdminAccount(event) {
+      event.preventDefault();
+      const newUser = document.getElementById('admin-new-user').value.trim();
+      const oldPass = document.getElementById('admin-old-pass').value;
+      const newPass = document.getElementById('admin-new-pass').value;
+
+      if (!newUser) return;
+      if (hashPassword(oldPass) !== state.auth.passwordHash) {
+        showToast('目前密碼驗證失敗，無法更新！', 'error');
+        return;
+      }
+      if (newPass && newPass.length < 4) {
+        showToast('新密碼長度請至少輸入 4 碼', 'error');
+        return;
+      }
+
+      state.auth.username = newUser;
+      if (newPass) {
+        state.auth.passwordHash = hashPassword(newPass);
+      }
+      state.auth.isDefault = false;
+      saveData(false);
+
+      const token = state.auth.username + ':' + state.auth.passwordHash;
+      if (localStorage.getItem(AUTH_SESSION_KEY)) localStorage.setItem(AUTH_SESSION_KEY, token);
+      if (sessionStorage.getItem(AUTH_SESSION_KEY)) sessionStorage.setItem(AUTH_SESSION_KEY, token);
+
+      document.getElementById('admin-old-pass').value = '';
+      document.getElementById('admin-new-pass').value = '';
+      renderSettingsView();
+      showToast('管理人帳號與密碼已更新！', 'success');
+    }
+
+    // =========================================================================
+    // 5. 分頁切換與主畫面渲染
+    // =========================================================================
+    function switchTab(tab) {
+      state.activeTab = tab;
+      ['monthly', 'annual', 'manage', 'settings'].forEach((t) => {
+        const section = document.getElementById(`view-${t}`);
+        const deskBtn = document.getElementById(`nav-${t}`);
+        const mobBtn = document.getElementById(`mnav-${t}`);
+        const isActive = t === tab;
+
+        section.classList.toggle('hidden', !isActive);
+
+        if (deskBtn) {
+          deskBtn.className = isActive
+            ? 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-white text-indigo-700 shadow-xs transition-all cursor-pointer'
+            : 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+        }
+        if (mobBtn) {
+          mobBtn.className = isActive
+            ? 'flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap bg-indigo-600 text-white shadow-xs transition-all cursor-pointer'
+            : 'flex-1 py-2 px-3 rounded-xl text-xs font-semibold text-center whitespace-nowrap bg-slate-100 text-slate-600 transition-all cursor-pointer';
+        }
+      });
+
+      if (tab === 'monthly') renderMonthlyView();
+      if (tab === 'annual') renderAnnualView();
+      if (tab === 'manage') renderManageView();
+      if (tab === 'settings') renderSettingsView();
+    }
+
+    function changeMonth(delta) {
+      let m = state.viewMonth + delta;
+      let y = state.viewYear;
+      if (m < 1) {
+        m = 12;
+        y -= 1;
+      } else if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+      state.viewYear = y;
+      state.viewMonth = m;
+      renderMonthlyView();
+    }
+
+    function jumpToToday() {
+      state.viewYear = now.getFullYear();
+      state.viewMonth = now.getMonth() + 1;
+      renderMonthlyView();
+      showToast('已切換回本月檢核表', 'info');
+    }
+
+    function jumpToSpecificMonth(year, month) {
+      state.viewYear = year;
+      state.viewMonth = month;
+      switchTab('monthly');
+    }
+
+    function changeAnnualYear(delta) {
+      state.annualYear += delta;
+      renderAnnualView();
+    }
+
+    // -------------------------------------------------------------------------
+    // 渲染：每月檢核表
+    // -------------------------------------------------------------------------
+    function renderMonthlyView() {
+      const y = state.viewYear;
+      const m = state.viewMonth;
+      document.getElementById('current-month-label').textContent = `${y} 年 ${m} 月`;
+
+      const stats = calcMonthStats(y, m);
+      document.getElementById('stat-month-estimated').textContent = formatCurrency(stats.estimatedTotal);
+      document.getElementById('stat-month-count-sub').textContent = `共 ${stats.totalCount} 筆應繳項目`;
+      document.getElementById('stat-month-paid').textContent = formatCurrency(stats.paidActualTotal);
+      document.getElementById('stat-month-unpaid').textContent = formatCurrency(stats.unpaidEstimatedTotal);
+      document.getElementById('stat-month-unpaid-sub').textContent = `尚有 ${stats.unpaidCount} 筆未繳納`;
+      document.getElementById('stat-month-percent').textContent = `${stats.percent}%`;
+      document.getElementById('stat-month-progress-bar').style.width = `${stats.percent}%`;
+      document.getElementById('stat-month-progress-text').textContent = `已完成 ${stats.paidCount} / ${stats.totalCount} 筆`;
+
+      updateReminderIndicators();
+
+      const keyword = (document.getElementById('monthly-search').value || '').trim().toLowerCase();
+      const statusFilter = document.getElementById('monthly-filter-status').value;
+      const freqFilter = document.getElementById('monthly-filter-freq').value;
+      const catFilter = document.getElementById('monthly-filter-cat').value;
+
+      const filtered = stats.bills.filter((b) => {
+        const rec = state.payments[getPaymentKey(b.id, y, m)];
+        const isPaid = Boolean(rec && rec.paid);
+
+        if (statusFilter === 'paid' && !isPaid) return false;
+        if (statusFilter === 'unpaid' && isPaid) return false;
+        if (freqFilter !== 'all' && b.frequency !== freqFilter) return false;
+        if (catFilter !== 'all' && b.category !== catFilter) return false;
+
+        if (keyword) {
+          const hay = `${b.name} ${b.category} ${b.note || ''} ${(rec && rec.note) || ''}`.toLowerCase();
+          if (!hay.includes(keyword)) return false;
+        }
+        return true;
+      });
+
+      const listEl = document.getElementById('monthly-bill-list');
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <p class="text-slate-700 font-semibold">目前沒有符合條件的應繳項目</p>
+            <p class="text-xs text-slate-500 mt-1">您可以調整篩選條件，或點擊右上方「新增費用」建立新項目</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtered
+        .map((b) => {
+          const key = getPaymentKey(b.id, y, m);
+          const rec = state.payments[key];
+          const isPaid = Boolean(rec && rec.paid);
+          const cat = getCategoryMeta(b.category);
+          const freq = FREQ_LABELS[b.frequency] || FREQ_LABELS.monthly;
+          const dueBadge = getDueStatusBadge(y, m, b.dueDay, isPaid);
+          const hasProof = hasPaymentProof(rec);
+          const isDriveProof = Boolean(rec && (rec.proofStorage === 'drive' || rec.proofDriveId));
+
+          return `
+            <div class="bg-white rounded-2xl border ${isPaid ? 'border-emerald-200/90 bg-emerald-50/15' : 'border-slate-200/90'} p-4 sm:p-5 shadow-xs hover:shadow-md transition-all">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <!-- 左側：勾選按鈕與項目資訊 -->
+                <div class="flex items-start gap-3.5 min-w-0 flex-1">
+                  <button onclick="openPaymentModal('${b.id}')" title="${isPaid ? '編輯繳費紀錄' : '標記為已繳費並上傳證明'}"
+                    class="mt-0.5 w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                      isPaid
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                        : 'border-slate-300 hover:border-indigo-500 text-transparent hover:bg-indigo-50'
+                    }">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h4 class="text-base font-bold ${isPaid ? 'text-slate-500 line-through' : 'text-slate-900'} truncate">
+                        ${escapeHTML(b.name)}
+                      </h4>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cat.badge}">
+                        ${escapeHTML(cat.label)}
+                      </span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${freq.cls}">
+                        ${freq.text}
+                      </span>
+                      ${dueBadge}
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500">
+                      <span class="inline-flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        截止日：${m} 月 ${b.dueDay} 日
+                      </span>
+                      ${
+                        isPaid && rec.paidDate
+                          ? `<span class="text-emerald-700 font-medium">✓ 已於 ${escapeHTML(rec.paidDate)} 繳費</span>`
+                          : ''
+                      }
+                      ${b.note ? `<span class="truncate max-w-xs sm:max-w-md">備註：${escapeHTML(b.note)}</span>` : ''}
+                    </div>
+                    ${
+                      isPaid && rec.note
+                        ? `<p class="text-xs text-emerald-700/90 bg-emerald-50 inline-block px-2.5 py-1 rounded-lg mt-2">繳費紀錄：${escapeHTML(rec.note)}</p>`
+                        : ''
+                    }
+                  </div>
+                </div>
+
+                <!-- 右側：金額與操作按鈕 -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center justify-between md:justify-end gap-3 pl-10 md:pl-0 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
+                  <div class="text-left md:text-right mr-1">
+                    ${
+                      isPaid
+                        ? `
+                          <p class="text-lg font-bold text-emerald-600">${formatCurrency(rec.actualAmount)}</p>
+                          <p class="text-[11px] text-slate-400">預估 ${formatCurrency(b.estimatedAmount)}</p>
+                        `
+                        : `
+                          <p class="text-lg font-bold text-slate-900">${formatCurrency(b.estimatedAmount)}</p>
+                          <p class="text-[11px] text-slate-400">預估應繳</p>
+                        `
+                    }
+                  </div>
+
+                  <div class="flex items-center gap-1.5">
+                    ${
+                      hasProof
+                        ? `
+                          <button onclick="openProofViewer('${key}', '${escapeHTML(b.name).replace(/'/g, "\\'")}')"
+                            class="inline-flex items-center gap-1 px-3 py-2 rounded-xl ${isDriveProof ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'} text-xs font-semibold transition-colors cursor-pointer"
+                            title="${isDriveProof ? '檔案儲存於 Google 雲端硬碟' : '檔案儲存於本機瀏覽器'}">
+                            ${
+                              isDriveProof
+                                ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>`
+                                : `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`
+                            }
+                            ${isDriveProof ? '雲端證明' : '檢視證明'}
+                          </button>
+                        `
+                        : ''
+                    }
+
+                    <button onclick="openPaymentModal('${b.id}')"
+                      class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                        isPaid
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                      }">
+                      ${isPaid ? (hasProof ? '修改紀錄' : '補傳證明') : '完成繳費'}
+                    </button>
+
+                    <button onclick="openBillModal('${b.id}')" class="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer" title="編輯項目設定">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+
+                    <button onclick="requestDeleteBill('${b.id}')" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="刪除項目">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 渲染：年度彙整報表
+    // -------------------------------------------------------------------------
+    function renderAnnualView() {
+      const y = state.annualYear;
+      document.getElementById('annual-year-label').textContent = `${y} 年度費用彙整`;
+
+      const monthlyStats = [];
+      let annualEst = 0;
+      let annualPaid = 0;
+      let annualUnpaid = 0;
+      let annualPaidCount = 0;
+      let annualUnpaidCount = 0;
+      const catTotals = {};
+
+      for (let m = 1; m <= 12; m++) {
+        const s = calcMonthStats(y, m);
+        monthlyStats.push({ month: m, ...s });
+        annualEst += s.estimatedTotal;
+        annualPaid += s.paidActualTotal;
+        annualUnpaid += s.unpaidEstimatedTotal;
+        annualPaidCount += s.paidCount;
+        annualUnpaidCount += s.unpaidCount;
+
+        s.bills.forEach((b) => {
+          catTotals[b.category] = (catTotals[b.category] || 0) + (Number(b.estimatedAmount) || 0);
+        });
+      }
+
+      document.getElementById('annual-total-estimated').textContent = formatCurrency(annualEst);
+      document.getElementById('annual-total-paid').textContent = formatCurrency(annualPaid);
+      document.getElementById('annual-paid-count').textContent = `已完成 ${annualPaidCount} 筆繳費`;
+      document.getElementById('annual-total-unpaid').textContent = formatCurrency(annualUnpaid);
+      document.getElementById('annual-unpaid-count').textContent = `尚餘 ${annualUnpaidCount} 筆待繳`;
+      document.getElementById('annual-monthly-avg').textContent = formatCurrency(Math.round(annualEst / 12));
+
+      const maxVal = Math.max(...monthlyStats.map((s) => Math.max(s.estimatedTotal, s.paidActualTotal)), 1);
+      const chartEl = document.getElementById('annual-bar-chart');
+      chartEl.innerHTML = monthlyStats
+        .map((s) => {
+          const estH = Math.max(Math.round((s.estimatedTotal / maxVal) * 100), s.estimatedTotal > 0 ? 4 : 0);
+          const paidH = Math.max(Math.round((s.paidActualTotal / maxVal) * 100), s.paidActualTotal > 0 ? 4 : 0);
+          const isCurrent = y === now.getFullYear() && s.month === now.getMonth() + 1;
+
+          return `
+            <button onclick="jumpToSpecificMonth(${y}, ${s.month})"
+              class="group flex flex-col items-center h-full justify-end gap-1.5 cursor-pointer focus:outline-none"
+              title="${y}年${s.month}月｜預估：${formatCurrency(s.estimatedTotal)}｜已繳：${formatCurrency(s.paidActualTotal)}">
+              <div class="w-full flex items-end justify-center gap-1 h-44 px-0.5">
+                <div class="w-2.5 sm:w-3 bg-slate-200 group-hover:bg-slate-300 rounded-t-md transition-all" style="height: ${estH}%"></div>
+                <div class="w-2.5 sm:w-3 bg-emerald-500 group-hover:bg-emerald-600 rounded-t-md transition-all" style="height: ${paidH}%"></div>
+              </div>
+              <span class="text-xs font-semibold px-1.5 py-0.5 rounded-md ${
+                isCurrent ? 'bg-indigo-600 text-white' : 'text-slate-600 group-hover:text-indigo-600'
+              }">${s.month}月</span>
+            </button>
+          `;
+        })
+        .join('');
+
+      const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+      const catEl = document.getElementById('annual-category-breakdown');
+      if (catEntries.length === 0) {
+        catEl.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">尚無年度費用資料</p>';
+      } else {
+        catEl.innerHTML = catEntries
+          .map(([catId, amount]) => {
+            const meta = getCategoryMeta(catId);
+            const pct = annualEst > 0 ? Math.round((amount / annualEst) * 100) : 0;
+            return `
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-semibold text-slate-700">${escapeHTML(meta.label)}</span>
+                  <span class="font-semibold text-slate-900">${formatCurrency(amount)} <span class="text-slate-400 font-normal">(${pct}%)</span></span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="${meta.bar} h-2 rounded-full" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      const tbody = document.getElementById('annual-monthly-table');
+      tbody.innerHTML = monthlyStats
+        .map((s) => {
+          const isCurrent = y === now.getFullYear() && s.month === now.getMonth() + 1;
+          return `
+            <tr onclick="jumpToSpecificMonth(${y}, ${s.month})" class="hover:bg-indigo-50/50 transition-colors cursor-pointer ${isCurrent ? 'bg-indigo-50/30' : ''}">
+              <td class="px-5 py-3.5 font-semibold text-slate-900 whitespace-nowrap">
+                ${s.month} 月 ${isCurrent ? '<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">本月</span>' : ''}
+              </td>
+              <td class="px-5 py-3.5 text-right text-slate-600">${s.paidCount} / ${s.totalCount} 筆</td>
+              <td class="px-5 py-3.5 text-right font-medium text-slate-800">${formatCurrency(s.estimatedTotal)}</td>
+              <td class="px-5 py-3.5 text-right font-semibold text-emerald-600">${formatCurrency(s.paidActualTotal)}</td>
+              <td class="px-5 py-3.5 text-right font-medium ${s.unpaidEstimatedTotal > 0 ? 'text-amber-600' : 'text-slate-400'}">
+                ${formatCurrency(s.unpaidEstimatedTotal)}
+              </td>
+              <td class="px-5 py-3.5 text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  s.totalCount === 0
+                    ? 'bg-slate-100 text-slate-500'
+                    : s.percent === 100
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-amber-100 text-amber-700'
+                }">
+                  ${s.totalCount === 0 ? '無帳單' : `${s.percent}%`}
+                </span>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 渲染：費用項目管理
+    // -------------------------------------------------------------------------
+    function renderManageView() {
+      const keyword = (document.getElementById('manage-search').value || '').trim().toLowerCase();
+      const freqFilter = document.getElementById('manage-filter-freq').value;
+      const catFilter = document.getElementById('manage-filter-cat').value;
+
+      const filtered = state.bills.filter((b) => {
+        if (freqFilter !== 'all' && b.frequency !== freqFilter) return false;
+        if (catFilter !== 'all' && b.category !== catFilter) return false;
+        if (keyword) {
+          const hay = `${b.name} ${b.category} ${b.note || ''}`.toLowerCase();
+          if (!hay.includes(keyword)) return false;
+        }
+        return true;
+      });
+
+      const container = document.getElementById('manage-bill-list');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center">
+            <p class="text-slate-700 font-semibold">找不到符合條件的費用項目</p>
+            <p class="text-xs text-slate-500 mt-1">請嘗試其他關鍵字，或新增一筆費用項目</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered
+        .map((b) => {
+          const cat = getCategoryMeta(b.category);
+          const freq = FREQ_LABELS[b.frequency] || FREQ_LABELS.monthly;
+          let scheduleText = `每月 ${b.dueDay} 日截止`;
+          if (b.frequency === 'bimonthly') {
+            scheduleText = `每兩月（${b.bimonthlyParity === 'even' ? '雙數月' : '單數月'}）${b.dueDay} 日截止`;
+          }
+          if (b.frequency === 'yearly') scheduleText = `每年 ${b.dueMonth} 月 ${b.dueDay} 日截止`;
+          if (b.frequency === 'once') scheduleText = `${b.dueYear} 年 ${b.dueMonth} 月 ${b.dueDay} 日（單次）`;
+
+          let yearlyImpact = Number(b.estimatedAmount) || 0;
+          if (b.frequency === 'monthly') yearlyImpact *= 12;
+          else if (b.frequency === 'bimonthly') yearlyImpact *= 6;
+
+          return `
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cat.badge}">
+                      ${escapeHTML(cat.label)}
+                    </span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${freq.cls}">
+                      ${freq.text}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button onclick="openBillModal('${b.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer" title="修改">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button onclick="requestDeleteBill('${b.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer" title="刪除">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <h4 class="text-base font-bold text-slate-900">${escapeHTML(b.name)}</h4>
+                <p class="text-xs text-slate-500 mt-1">${scheduleText}</p>
+                ${b.note ? `<p class="text-xs text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg line-clamp-2">${escapeHTML(b.note)}</p>` : ''}
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-end justify-between">
+                <div>
+                  <span class="text-[11px] text-slate-400 block">單期預估</span>
+                  <span class="text-lg font-bold text-slate-900">${formatCurrency(b.estimatedAmount)}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[11px] text-slate-400 block">年度預估合計</span>
+                  <span class="text-sm font-semibold text-indigo-600">${formatCurrency(yearlyImpact)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 5.5 系統設定頁面渲染、自訂分類、提醒通知與 Google Sheet / Drive 同步
+    // =========================================================================
+    function renderSettingsView() {
+      const catContainer = document.getElementById('settings-category-list');
+      catContainer.innerHTML = state.categories
+        .map((c) => {
+          const pal = COLOR_PALETTE[c.color] || COLOR_PALETTE.slate;
+          const isOther = c.id === '其他';
+          return `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${pal.badge}">
+              <span>${escapeHTML(c.label)}</span>
+              ${
+                !isOther
+                  ? `<button type="button" onclick="deleteCustomCategory('${escapeHTML(c.id).replace(/'/g, "\\'")}')" class="ml-0.5 hover:text-rose-600 cursor-pointer" title="刪除此分類">×</button>`
+                  : ''
+              }
+            </span>
+          `;
+        })
+        .join('');
+
+      document.getElementById('set-remind-enabled').checked = Boolean(state.reminderSettings.enabled);
+      document.getElementById('set-remind-days').value = state.reminderSettings.daysBefore || 5;
+      document.getElementById('set-remind-banner').checked = Boolean(state.reminderSettings.showBanner);
+      const notifyStatus = document.getElementById('browser-notify-status');
+      if (!('Notification' in window)) {
+        notifyStatus.textContent = '此瀏覽器不支援桌面推播通知';
+      } else if (Notification.permission === 'granted') {
+        notifyStatus.textContent = '已授權桌面推播通知';
+      } else if (Notification.permission === 'denied') {
+        notifyStatus.textContent = '通知權限已被封鎖，請至瀏覽器設定開啟';
+      } else {
+        notifyStatus.textContent = '尚未授權，點擊右側按鈕開啟';
+      }
+
+      document.getElementById('gs-url').value = state.googleSheet.url || '';
+      document.getElementById('gs-token').value = state.googleSheet.token || '';
+      document.getElementById('gs-autosync').checked = Boolean(state.googleSheet.autoSync);
+      document.getElementById('gas-code-block').textContent = GAS_TEMPLATE_CODE;
+      updateSyncBadge();
+
+      document.getElementById('admin-current-user').textContent = `目前登入：${state.auth.username}`;
+      document.getElementById('admin-new-user').value = state.auth.username;
+    }
+
+    function addCustomCategory(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('new-cat-name');
+      const color = document.getElementById('new-cat-color').value;
+      const label = nameInput.value.trim();
+      if (!label) return;
+
+      if (state.categories.some((c) => c.label === label || c.id === label)) {
+        showToast('此分類名稱已存在！', 'error');
+        return;
+      }
+
+      const id = 'cat_' + Date.now().toString(36);
+      state.categories.splice(state.categories.length - 1, 0, { id, label, color });
+      nameInput.value = '';
+      saveData();
+      initCategorySelects();
+      renderSettingsView();
+      showToast(`已新增分類「${label}」`, 'success');
+    }
+
+    function deleteCustomCategory(catId) {
+      const target = state.categories.find((c) => c.id === catId);
+      if (!target || catId === '其他') return;
+
+      openConfirmModal(
+        '確定刪除此分類？',
+        `刪除分類「${target.label}」後，原本歸類於此的費用項目將自動移至「其他費用」。`,
+        '確定刪除',
+        () => {
+          state.categories = state.categories.filter((c) => c.id !== catId);
+          state.bills.forEach((b) => {
+            if (b.category === catId) b.category = '其他';
+          });
+          saveData();
+          initCategorySelects();
+          renderSettingsView();
+          showToast(`已刪除分類「${target.label}」`, 'info');
+        }
+      );
+    }
+
+    function saveReminderSettings() {
+      state.reminderSettings.enabled = document.getElementById('set-remind-enabled').checked;
+      state.reminderSettings.daysBefore = Math.min(30, Math.max(1, Number(document.getElementById('set-remind-days').value) || 5));
+      state.reminderSettings.showBanner = document.getElementById('set-remind-banner').checked;
+      saveData();
+      updateReminderIndicators();
+      showToast('已更新提醒通知設定', 'success');
+    }
+
+    function getUpcomingReminders() {
+      if (!state.reminderSettings.enabled) return [];
+      const curY = now.getFullYear();
+      const curM = now.getMonth() + 1;
+      const daysBefore = Math.max(1, Number(state.reminderSettings.daysBefore) || 5);
+      const todayStart = new Date(curY, curM - 1, now.getDate());
+      const bills = getBillsForMonth(curY, curM);
+      const alerts = [];
+
+      bills.forEach((b) => {
+        const rec = state.payments[getPaymentKey(b.id, curY, curM)];
+        if (rec && rec.paid) return;
+        const maxDay = new Date(curY, curM, 0).getDate();
+        const clampedDay = Math.min(b.dueDay || 1, maxDay);
+        const dueDate = new Date(curY, curM - 1, clampedDay, 23, 59, 59);
+        const diffDays = Math.ceil((dueDate - todayStart) / (1000 * 60 * 60 * 24));
+        if (diffDays <= daysBefore) {
+          alerts.push({ bill: b, diffDays, year: curY, month: curM });
+        }
+      });
+
+      return alerts.sort((a, b) => a.diffDays - b.diffDays);
+    }
+
+    function updateReminderIndicators() {
+      const alerts = getUpcomingReminders();
+      const badge = document.getElementById('reminder-bell-badge');
+      const banner = document.getElementById('reminder-alert-banner');
+
+      if (alerts.length > 0) {
+        badge.textContent = alerts.length > 9 ? '9+' : alerts.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (alerts.length > 0 && state.reminderSettings.showBanner) {
+        const overdueCount = alerts.filter((a) => a.diffDays < 0).length;
+        const upcomingCount = alerts.length - overdueCount;
+        document.getElementById('reminder-banner-title').textContent =
+          overdueCount > 0
+            ? `您有 ${overdueCount} 筆已逾期帳單，以及 ${upcomingCount} 筆即將到期！`
+            : `提醒：本月有 ${upcomingCount} 筆帳單將於 ${state.reminderSettings.daysBefore} 天內到期`;
+        document.getElementById('reminder-banner-desc').textContent = alerts
+          .slice(0, 3)
+          .map((a) => `${a.bill.name}（${a.diffDays < 0 ? `逾期${Math.abs(a.diffDays)}天` : a.diffDays === 0 ? '今日截止' : `剩${a.diffDays}天`}）`)
+          .join('、') + (alerts.length > 3 ? ` 等共 ${alerts.length} 筆` : '');
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    function openReminderModal() {
+      const alerts = getUpcomingReminders();
+      const listEl = document.getElementById('reminder-modal-list');
+      document.getElementById('reminder-modal-sub').textContent = `目前設定：截止日前 ${state.reminderSettings.daysBefore} 天內提醒（顯示本月未繳項目）`;
+
+      if (!state.reminderSettings.enabled) {
+        listEl.innerHTML = '<p class="text-sm text-slate-500 text-center py-8">提醒功能目前已關閉，可至系統設定重新開啟。</p>';
+      } else if (alerts.length === 0) {
+        listEl.innerHTML = '<p class="text-sm text-emerald-600 font-semibold text-center py-8">太棒了！本月目前沒有逾期或即將到期的未繳帳單。</p>';
+      } else {
+        listEl.innerHTML = alerts
+          .map(({ bill, diffDays, year, month }) => {
+            const tag =
+              diffDays < 0
+                ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">已逾期 ${Math.abs(diffDays)} 天</span>`
+                : diffDays === 0
+                ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">今日截止</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">剩 ${diffDays} 天到期</span>`;
+            return `
+              <div class="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-bold text-slate-900 truncate">${escapeHTML(bill.name)}</span>
+                    ${tag}
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">截止日：${month} 月 ${bill.dueDay} 日｜預估 ${formatCurrency(bill.estimatedAmount)}</p>
+                </div>
+                <button onclick="closeReminderModal(); jumpToSpecificMonth(${year}, ${month}); openPaymentModal('${bill.id}')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0 cursor-pointer">
+                  前往繳費
+                </button>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      document.getElementById('reminder-modal').classList.remove('hidden');
+    }
+
+    function closeReminderModal() {
+      document.getElementById('reminder-modal').classList.add('hidden');
+    }
+
+    function requestBrowserNotification() {
+      if (!('Notification' in window)) {
+        showToast('您的瀏覽器不支援桌面推播通知', 'error');
+        return;
+      }
+      Notification.requestPermission().then((perm) => {
+        renderSettingsView();
+        if (perm === 'granted') {
+          new Notification('費用繳納檢核表提醒測試', {
+            body: '桌面推播通知已成功開啟！有即將到期或逾期帳單時將會提醒您。',
+          });
+          showToast('已發送測試桌面通知！', 'success');
+        } else {
+          showToast('未取得通知授權，請檢查瀏覽器權限設定', 'error');
+        }
+      });
+    }
+
+    function sendBrowserReminderNotifications() {
+      if (!state.reminderSettings.enabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+      const alerts = getUpcomingReminders();
+      if (alerts.length > 0) {
+        new Notification('費用繳納檢核提醒', {
+          body: `您本月有 ${alerts.length} 筆待繳帳單已逾期或將於 ${state.reminderSettings.daysBefore} 天內到期，請記得前往繳納。`,
+        });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Google Sheet 雲端資料庫 & Google Drive 證明上傳
+    // -------------------------------------------------------------------------
+    function saveGoogleSheetConfig() {
+      state.googleSheet.url = document.getElementById('gs-url').value.trim();
+      state.googleSheet.token = document.getElementById('gs-token').value.trim();
+      state.googleSheet.autoSync = document.getElementById('gs-autosync').checked;
+      saveData(false);
+      updateSyncBadge();
+      showToast('已儲存 Google Sheet 與雲端硬碟連線設定', 'success');
+    }
+
+    function updateSyncBadge(statusText = null, statusType = null) {
+      const dot = document.getElementById('sync-dot');
+      const text = document.getElementById('sync-text');
+      const pill = document.getElementById('gs-status-pill');
+
+      if (!state.googleSheet.url) {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        text.textContent = '本機模式';
+        if (pill) {
+          pill.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 self-start sm:self-auto';
+          pill.textContent = '尚未設定連線（目前使用本機儲存）';
+        }
+        return;
+      }
+
+      if (statusType === 'syncing') {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        text.textContent = statusText || '同步中...';
+      } else if (statusType === 'error') {
+        dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        text.textContent = statusText || '同步失敗';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        text.textContent = statusText || '雲端已連線';
+      }
+
+      if (pill) {
+        pill.className =
+          statusType === 'error'
+            ? 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 self-start sm:self-auto'
+            : 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 self-start sm:self-auto';
+        pill.textContent = state.googleSheet.lastSync
+          ? `上次同步：${new Date(state.googleSheet.lastSync).toLocaleString('zh-TW')}`
+          : '已連線至 Google 試算表與雲端硬碟';
+      }
+    }
+
+    // 將單一繳費證明上傳至該 Google Sheet 所在的 Google 雲端硬碟資料夾
+    async function uploadProofToGoogleDrive(proofObj, billName, year, month) {
+      const url = (state.googleSheet.url || '').trim();
+      const token = (state.googleSheet.token || '').trim();
+      if (!url) throw new Error('未設定 Google Apps Script 網址');
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'uploadProof',
+          token,
+          fileData: proofObj.data,
+          fileName: proofObj.name || 'proof.jpg',
+          mimeType: proofObj.type || 'image/jpeg',
+          billName: billName || '費用帳單',
+          year,
+          month,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok || !data.fileId) {
+        throw new Error(data.error || '雲端硬碟上傳失敗（請確認 Apps Script 已更新至 v2 並授權 Drive 權限）');
+      }
+      return {
+        proofStorage: 'drive',
+        proofDriveId: data.fileId,
+        proofUrl: data.fileUrl,
+        proofPreviewUrl: data.previewUrl,
+        proofDownloadUrl: data.downloadUrl,
+        proofName: data.fileName || proofObj.name,
+        proofType: data.mimeType || proofObj.type,
+        proofData: null, // 清空本地 Base64，節省空間並避免超過試算表 50,000 字元上限
+      };
+    }
+
+    async function syncToGoogleSheet(manual = true) {
+      const url = (document.getElementById('gs-url')?.value || state.googleSheet.url || '').trim();
+      const token = (document.getElementById('gs-token')?.value || state.googleSheet.token || '').trim();
+      if (!url) {
+        if (manual) showToast('請先填寫 Google Apps Script Web App URL', 'error');
+        return;
+      }
+
+      updateSyncBadge('同步中...', 'syncing');
+      try {
+        // 先自動將尚未上傳至雲端硬碟的本機 Base64 證明搬移至 Google 雲端硬碟
+        const paymentKeys = Object.keys(state.payments);
+        let migratedCount = 0;
+        for (const key of paymentKeys) {
+          const rec = state.payments[key];
+          if (rec && rec.proofData && !rec.proofDriveId) {
+            const parts = key.split('_');
+            const m = Number(parts.pop());
+            const y = Number(parts.pop());
+            const bId = parts.join('_');
+            const bill = state.bills.find((b) => b.id === bId);
+            const driveInfo = await uploadProofToGoogleDrive(
+              { data: rec.proofData, name: rec.proofName, type: rec.proofType },
+              bill ? bill.name : '帳單',
+              y || state.viewYear,
+              m || state.viewMonth
+            );
+            state.payments[key] = { ...rec, ...driveInfo };
+            migratedCount++;
+          }
+        }
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            token,
+            bills: state.bills,
+            payments: state.payments,
+            categories: state.categories,
+            reminderSettings: state.reminderSettings,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || '未知錯誤');
+
+        state.googleSheet.lastSync = new Date().toISOString();
+        saveData(false);
+        if (migratedCount > 0) refreshCurrentView();
+        updateSyncBadge('已同步至雲端', 'ok');
+        if (manual) {
+          const extra = migratedCount > 0 ? `（並已將 ${migratedCount} 筆本機證明轉存至雲端硬碟）` : '';
+          showToast(`已成功同步資料至 Google Sheet！${extra}`, 'success');
+        }
+      } catch (err) {
+        console.error('Google Sheet 同步失敗:', err);
+        updateSyncBadge('同步失敗', 'error');
+        if (manual) showToast('同步失敗：' + (err.message || '請確認 Apps Script 網址與權限設定'), 'error');
+      }
+    }
+
+    async function loadFromGoogleSheet() {
+      const url = (document.getElementById('gs-url')?.value || state.googleSheet.url || '').trim();
+      const token = (document.getElementById('gs-token')?.value || state.googleSheet.token || '').trim();
+      if (!url) {
+        showToast('請先填寫 Google Apps Script Web App URL', 'error');
+        return;
+      }
+
+      updateSyncBadge('載入中...', 'syncing');
+      try {
+        const queryUrl = url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+        const res = await fetch(queryUrl);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || '讀取失敗');
+
+        if (Array.isArray(data.bills)) state.bills = data.bills;
+        if (data.payments && typeof data.payments === 'object') state.payments = data.payments;
+        if (Array.isArray(data.categories) && data.categories.length > 0) state.categories = data.categories;
+        if (data.reminderSettings) state.reminderSettings = { ...state.reminderSettings, ...data.reminderSettings };
+
+        state.googleSheet.lastSync = new Date().toISOString();
+        saveData(false);
+        initCategorySelects();
+        refreshCurrentView();
+        updateSyncBadge('已從雲端載入', 'ok');
+        showToast('已成功從 Google Sheet 載入最新資料！', 'success');
+      } catch (err) {
+        console.error('Google Sheet 載入失敗:', err);
+        updateSyncBadge('載入失敗', 'error');
+        showToast('載入失敗，請確認網址、Token 或試算表部署權限。', 'error');
+      }
+    }
+
+    function copyGasCode() {
+      const textarea = document.createElement('textarea');
+      textarea.value = GAS_TEMPLATE_CODE;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('已複製最新版 Apps Script 程式碼！', 'success');
+      } catch (err) {
+        showToast('複製失敗，請手動選取程式碼複製', 'error');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // =========================================================================
+    // 6. 費用項目 CRUD 操作（新增、修改、刪除）
+    // =========================================================================
+    function openBillModal(billId = null) {
+      const modal = document.getElementById('bill-modal');
+      const title = document.getElementById('bill-modal-title');
+      document.getElementById('bill-form').reset();
+
+      if (billId) {
+        const bill = state.bills.find((b) => b.id === billId);
+        if (!bill) return;
+        title.textContent = '修改費用項目';
+        document.getElementById('bill-id').value = bill.id;
+        document.getElementById('bill-name').value = bill.name;
+        document.getElementById('bill-category').value = bill.category;
+        document.getElementById('bill-amount').value = bill.estimatedAmount;
+        document.querySelector(`input[name="bill-freq"][value="${bill.frequency}"]`).checked = true;
+        document.getElementById('bill-bimonthly-parity').value = bill.bimonthlyParity || 'odd';
+        document.getElementById('bill-due-year').value = bill.dueYear || state.viewYear;
+        document.getElementById('bill-due-month').value = bill.dueMonth || state.viewMonth;
+        document.getElementById('bill-due-day').value = bill.dueDay || 15;
+        document.getElementById('bill-note').value = bill.note || '';
+      } else {
+        title.textContent = '新增費用項目';
+        document.getElementById('bill-id').value = '';
+        document.getElementById('bill-category').value = state.categories[0]?.id || '其他';
+        document.querySelector('input[name="bill-freq"][value="monthly"]').checked = true;
+        document.getElementById('bill-bimonthly-parity').value = state.viewMonth % 2 === 1 ? 'odd' : 'even';
+        document.getElementById('bill-due-year').value = state.viewYear;
+        document.getElementById('bill-due-month').value = state.viewMonth;
+        document.getElementById('bill-due-day').value = 15;
+      }
+
+      toggleFrequencyFields();
+      modal.classList.remove('hidden');
+    }
+
+    function closeBillModal() {
+      document.getElementById('bill-modal').classList.add('hidden');
+    }
+
+    function toggleFrequencyFields() {
+      const freq = document.querySelector('input[name="bill-freq"]:checked').value;
+      const yearField = document.getElementById('field-due-year');
+      const monthField = document.getElementById('field-due-month');
+      const bimonthlyField = document.getElementById('field-bimonthly-parity');
+      const dayWrapper = document.getElementById('field-due-day-wrapper');
+
+      yearField.classList.add('hidden');
+      monthField.classList.add('hidden');
+      bimonthlyField.classList.add('hidden');
+
+      if (freq === 'monthly') {
+        dayWrapper.className = 'sm:col-span-3';
+      } else if (freq === 'bimonthly') {
+        bimonthlyField.classList.remove('hidden');
+        dayWrapper.className = 'sm:col-span-1';
+      } else if (freq === 'yearly') {
+        monthField.classList.remove('hidden');
+        dayWrapper.className = 'sm:col-span-2';
+      } else {
+        yearField.classList.remove('hidden');
+        monthField.classList.remove('hidden');
+        dayWrapper.className = 'sm:col-span-1';
+      }
+    }
+
+    function saveBillForm(event) {
+      event.preventDefault();
+      const id = document.getElementById('bill-id').value;
+      const name = document.getElementById('bill-name').value.trim();
+      const category = document.getElementById('bill-category').value;
+      const estimatedAmount = Math.max(0, Number(document.getElementById('bill-amount').value) || 0);
+      const frequency = document.querySelector('input[name="bill-freq"]:checked').value;
+      const bimonthlyParity = frequency === 'bimonthly' ? document.getElementById('bill-bimonthly-parity').value : null;
+      const dueYear = frequency === 'once' ? Number(document.getElementById('bill-due-year').value) || state.viewYear : null;
+      const dueMonth = frequency === 'yearly' || frequency === 'once' ? Number(document.getElementById('bill-due-month').value) || 1 : null;
+      const dueDay = Math.min(31, Math.max(1, Number(document.getElementById('bill-due-day').value) || 1));
+      const note = document.getElementById('bill-note').value.trim();
+
+      if (!name) return;
+
+      if (id) {
+        const idx = state.bills.findIndex((b) => b.id === id);
+        if (idx !== -1) {
+          state.bills[idx] = { ...state.bills[idx], name, category, estimatedAmount, frequency, bimonthlyParity, dueYear, dueMonth, dueDay, note };
+          showToast(`已更新「${name}」`, 'success');
+        }
+      } else {
+        const newBill = {
+          id: 'bill_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name,
+          category,
+          estimatedAmount,
+          frequency,
+          bimonthlyParity,
+          dueYear,
+          dueMonth,
+          dueDay,
+          note,
+        };
+        state.bills.push(newBill);
+        showToast(`已新增「${name}」`, 'success');
+      }
+
+      saveData();
+      closeBillModal();
+      refreshCurrentView();
+    }
+
+    function requestDeleteBill(billId) {
+      const bill = state.bills.find((b) => b.id === billId);
+      if (!bill) return;
+
+      openConfirmModal(
+        '確定要刪除此費用項目？',
+        `刪除「${bill.name}」後，該項目與其歷史繳費證明紀錄將一併移除且無法復原。`,
+        '確定刪除',
+        () => {
+          state.bills = state.bills.filter((b) => b.id !== billId);
+          Object.keys(state.payments).forEach((k) => {
+            if (k.startsWith(billId + '_')) {
+              delete state.payments[k];
+            }
+          });
+          saveData();
+          refreshCurrentView();
+          showToast(`已刪除「${bill.name}」`, 'info');
+        }
+      );
+    }
+
+    // =========================================================================
+    // 7. 完成繳費、上傳至 Google 雲端硬碟或本機壓縮
+    // =========================================================================
+    function openPaymentModal(billId) {
+      const bill = state.bills.find((b) => b.id === billId);
+      if (!bill) return;
+
+      const y = state.viewYear;
+      const m = state.viewMonth;
+      const key = getPaymentKey(billId, y, m);
+      const rec = state.payments[key];
+      const isPaid = Boolean(rec && rec.paid);
+      const isCloudReady = Boolean(state.googleSheet.url);
+
+      document.getElementById('pay-bill-id').value = billId;
+      document.getElementById('payment-modal-title').textContent = isPaid ? '編輯繳費紀錄與證明' : '完成繳費並上傳證明';
+      document.getElementById('payment-modal-subtitle').textContent = `${bill.name}（${y} 年 ${m} 月）`;
+      document.getElementById('pay-amount').value = isPaid ? rec.actualAmount : bill.estimatedAmount;
+      document.getElementById('pay-estimated-hint').textContent = `原預估金額：${formatCurrency(bill.estimatedAmount)}`;
+      document.getElementById('pay-date').value = (rec && rec.paidDate) || formatDateISO(new Date());
+      document.getElementById('pay-note').value = (rec && rec.note) || '';
+      document.getElementById('pay-proof-input').value = '';
+
+      // 顯示目前存檔目的地標籤
+      const destBadge = document.getElementById('proof-dest-badge');
+      const uploadHint = document.getElementById('proof-upload-hint');
+      if (isCloudReady) {
+        destBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700';
+        destBadge.textContent = '將存至 Google 雲端硬碟';
+        uploadHint.textContent = '支援 JPG、PNG、WEBP 及 5MB 內 PDF，儲存後將自動歸檔至雲端硬碟';
+      } else {
+        destBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+        destBadge.textContent = '存於本機瀏覽器';
+        uploadHint.textContent = '支援 JPG、PNG、WEBP（自動壓縮）及 2MB 內 PDF；設定 Google 試算表後即可改存雲端硬碟';
+      }
+
+      document.getElementById('btn-mark-unpaid').classList.toggle('hidden', !isPaid);
+
+      // 載入既有證明（支援雲端硬碟與本機）
+      if (rec && (rec.proofDriveId || rec.proofUrl)) {
+        pendingProof = {
+          storage: 'drive',
+          driveId: rec.proofDriveId,
+          url: rec.proofUrl,
+          previewUrl: rec.proofPreviewUrl,
+          downloadUrl: rec.proofDownloadUrl,
+          name: rec.proofName || '雲端繳費證明',
+          type: rec.proofType || 'application/octet-stream',
+          isNew: false,
+        };
+      } else if (rec && rec.proofData) {
+        pendingProof = {
+          storage: 'local',
+          data: rec.proofData,
+          name: rec.proofName || '繳費證明',
+          type: rec.proofType || 'image/jpeg',
+          isNew: false,
+        };
+      } else {
+        pendingProof = null;
+      }
+      renderProofPreview();
+
+      document.getElementById('payment-modal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+      pendingProof = null;
+    }
+
+    function handleProofFileSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const isCloudReady = Boolean(state.googleSheet.url);
+      const maxPdfBytes = isCloudReady ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+
+      if (file.type === 'application/pdf') {
+        if (file.size > maxPdfBytes) {
+          showToast(`PDF 檔案請小於 ${isCloudReady ? '5MB' : '2MB'}。`, 'error');
+          event.target.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          pendingProof = {
+            storage: 'local',
+            data: e.target.result,
+            name: file.name,
+            type: 'application/pdf',
+            isNew: true,
+          };
+          renderProofPreview();
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      if (file.type.startsWith('image/')) {
+        // 雲端硬碟保留較高畫質 (1600px, 0.85)，本機則適度壓縮 (1200px, 0.78)
+        compressImageFile(file, isCloudReady ? 1600 : 1200, isCloudReady ? 0.85 : 0.78)
+          .then((compressedDataUrl) => {
+            pendingProof = {
+              storage: 'local',
+              data: compressedDataUrl,
+              name: file.name,
+              type: 'image/jpeg',
+              isNew: true,
+            };
+            renderProofPreview();
+          })
+          .catch(() => {
+            showToast('圖片處理失敗，請更換圖片再試。', 'error');
+          });
+        return;
+      }
+
+      showToast('僅支援圖片檔 (JPG/PNG/WEBP) 或 PDF 格式。', 'error');
+      event.target.value = '';
+    }
+
+    function compressImageFile(file, maxDimension, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = reject;
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderProofPreview() {
+      const placeholder = document.getElementById('proof-upload-placeholder');
+      const previewBox = document.getElementById('proof-preview-box');
+      const imgEl = document.getElementById('proof-preview-img');
+      const pdfEl = document.getElementById('proof-preview-pdf');
+      const driveEl = document.getElementById('proof-preview-drive');
+      const nameEl = document.getElementById('proof-preview-name');
+      const subEl = document.getElementById('proof-preview-sub');
+
+      if (!pendingProof) {
+        placeholder.classList.remove('hidden');
+        previewBox.classList.add('hidden');
+        return;
+      }
+
+      placeholder.classList.add('hidden');
+      previewBox.classList.remove('hidden');
+      nameEl.textContent = pendingProof.name;
+
+      imgEl.classList.add('hidden');
+      pdfEl.classList.add('hidden');
+      driveEl.classList.add('hidden');
+
+      if (pendingProof.storage === 'drive') {
+        driveEl.classList.remove('hidden');
+        subEl.textContent = '已儲存於 Google 雲端硬碟（可直接檢視或更換新檔）';
+      } else if (pendingProof.type === 'application/pdf') {
+        pdfEl.classList.remove('hidden');
+        subEl.textContent = state.googleSheet.url ? '按下確認後將自動上傳至 Google 雲端硬碟' : '已準備就緒，儲存後即可隨時檢視';
+      } else {
+        imgEl.src = pendingProof.data;
+        imgEl.classList.remove('hidden');
+        subEl.textContent = state.googleSheet.url ? '按下確認後將自動上傳至 Google 雲端硬碟' : '已準備就緒，儲存後即可隨時檢視';
+      }
+    }
+
+    function clearPendingProof() {
+      pendingProof = null;
+      document.getElementById('pay-proof-input').value = '';
+      renderProofPreview();
+    }
+
+    async function savePaymentForm(event) {
+      event.preventDefault();
+      const billId = document.getElementById('pay-bill-id').value;
+      const bill = state.bills.find((b) => b.id === billId);
+      const actualAmount = Math.max(0, Number(document.getElementById('pay-amount').value) || 0);
+      const paidDate = document.getElementById('pay-date').value;
+      const note = document.getElementById('pay-note').value.trim();
+      const submitBtn = document.getElementById('btn-save-payment');
+
+      const key = getPaymentKey(billId, state.viewYear, state.viewMonth);
+      let proofPayload = {
+        proofStorage: null,
+        proofData: null,
+        proofDriveId: null,
+        proofUrl: null,
+        proofPreviewUrl: null,
+        proofDownloadUrl: null,
+        proofName: null,
+        proofType: null,
+      };
+
+      if (pendingProof) {
+        if (pendingProof.storage === 'drive') {
+          proofPayload = {
+            proofStorage: 'drive',
+            proofData: null,
+            proofDriveId: pendingProof.driveId,
+            proofUrl: pendingProof.url,
+            proofPreviewUrl: pendingProof.previewUrl,
+            proofDownloadUrl: pendingProof.downloadUrl,
+            proofName: pendingProof.name,
+            proofType: pendingProof.type,
+          };
+        } else if (pendingProof.data && state.googleSheet.url) {
+          // 有設定 Google Sheet URL：直接上傳至該試算表的 Google 雲端硬碟
+          submitBtn.disabled = true;
+          submitBtn.textContent = '上傳至雲端硬碟中...';
+          try {
+            const driveInfo = await uploadProofToGoogleDrive(
+              pendingProof,
+              bill ? bill.name : '費用帳單',
+              state.viewYear,
+              state.viewMonth
+            );
+            proofPayload = { ...proofPayload, ...driveInfo };
+            showToast('繳費證明已自動存檔至 Google 雲端硬碟！', 'success');
+          } catch (err) {
+            console.error('雲端硬碟上傳失敗，改存本機:', err);
+            proofPayload = {
+              ...proofPayload,
+              proofStorage: 'local',
+              proofData: pendingProof.data,
+              proofName: pendingProof.name,
+              proofType: pendingProof.type,
+            };
+            showToast('雲端硬碟上傳失敗（已暫存本機），請確認 Apps Script 已更新並授權 Drive。', 'error');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '確認完成繳費';
+          }
+        } else {
+          proofPayload = {
+            ...proofPayload,
+            proofStorage: 'local',
+            proofData: pendingProof.data,
+            proofName: pendingProof.name,
+            proofType: pendingProof.type,
+          };
+        }
+      }
+
+      state.payments[key] = {
+        paid: true,
+        actualAmount,
+        paidDate,
+        note,
+        ...proofPayload,
+      };
+
+      if (saveData()) {
+        closePaymentModal();
+        refreshCurrentView();
+        showToast('已完成繳費登錄！', 'success');
+      }
+    }
+
+    function markAsUnpaidFromModal() {
+      const billId = document.getElementById('pay-bill-id').value;
+      const key = getPaymentKey(billId, state.viewYear, state.viewMonth);
+      delete state.payments[key];
+      saveData();
+      closePaymentModal();
+      refreshCurrentView();
+      showToast('已改回未繳狀態', 'info');
+    }
+
+    // =========================================================================
+    // 8. 繳費證明檢視器 (Lightbox - 支援 Google 雲端硬碟與本機檔案)
+    // =========================================================================
+    function openProofViewer(paymentKey, billName) {
+      const rec = state.payments[paymentKey];
+      if (!hasPaymentProof(rec)) {
+        showToast('此筆紀錄尚未上傳繳費證明', 'info');
+        return;
+      }
+
+      const isDrive = Boolean(rec.proofDriveId || rec.proofUrl);
+      document.getElementById('viewer-title').textContent = `${billName} — 繳費證明`;
+      document.getElementById('viewer-subtitle').textContent =
+        `繳費日期：${rec.paidDate || '未填寫'}｜實繳金額：${formatCurrency(rec.actualAmount)}｜位置：${isDrive ? 'Google 雲端硬碟' : '本機瀏覽器'}`;
+
+      const driveBtn = document.getElementById('viewer-drive-btn');
+      const dlBtn = document.getElementById('viewer-download-btn');
+      const body = document.getElementById('viewer-body');
+
+      if (isDrive) {
+        const previewSrc = rec.proofPreviewUrl || `https://drive.google.com/file/d/${rec.proofDriveId}/preview`;
+        const openUrl = rec.proofUrl || `https://drive.google.com/file/d/${rec.proofDriveId}/view`;
+        const downloadUrl = rec.proofDownloadUrl || `https://drive.google.com/uc?export=download&id=${rec.proofDriveId}`;
+
+        driveBtn.href = openUrl;
+        driveBtn.classList.remove('hidden');
+        dlBtn.href = downloadUrl;
+        dlBtn.setAttribute('target', '_blank');
+        dlBtn.removeAttribute('download');
+
+        body.innerHTML = `<iframe src="${previewSrc}" class="w-full h-[68vh] rounded-lg border border-slate-200 bg-white" allow="autoplay"></iframe>`;
+      } else {
+        driveBtn.classList.add('hidden');
+        dlBtn.href = rec.proofData;
+        dlBtn.removeAttribute('target');
+        dlBtn.setAttribute('download', rec.proofName || `${billName}_繳費證明`);
+
+        if (rec.proofType === 'application/pdf') {
+          body.innerHTML = `<iframe src="${rec.proofData}" class="w-full h-[68vh] rounded-lg border border-slate-200 bg-white"></iframe>`;
+        } else {
+          body.innerHTML = `<img src="${rec.proofData}" alt="繳費證明" class="max-w-full max-h-[70vh] rounded-xl shadow-md object-contain bg-white" />`;
+        }
+      }
+
+      document.getElementById('proof-viewer-modal').classList.remove('hidden');
+    }
+
+    function closeProofViewer() {
+      document.getElementById('proof-viewer-modal').classList.add('hidden');
+      document.getElementById('viewer-body').innerHTML = '';
+    }
+
+    // =========================================================================
+    // 9. 資料匯出、備份還原與重設
+    // =========================================================================
+    function exportAnnualCSV() {
+      const y = state.annualYear;
+      const rows = [['年份', '月份', '費用名稱', '分類', '週期', '截止日', '預估金額', '繳費狀態', '實繳金額', '繳費日期', '繳費證明連結', '備註']];
+
+      for (let m = 1; m <= 12; m++) {
+        const bills = getBillsForMonth(y, m);
+        bills.forEach((b) => {
+          const rec = state.payments[getPaymentKey(b.id, y, m)];
+          const isPaid = Boolean(rec && rec.paid);
+          const proofText = isPaid
+            ? rec.proofUrl
+              ? rec.proofUrl
+              : rec.proofData
+              ? '本機已附證明'
+              : '無'
+            : '無';
+          rows.push([
+            y,
+            m,
+            b.name,
+            getCategoryMeta(b.category).label,
+            FREQ_LABELS[b.frequency]?.text || b.frequency,
+            `${m}/${b.dueDay}`,
+            b.estimatedAmount,
+            isPaid ? '已繳費' : '未繳費',
+            isPaid ? rec.actualAmount : 0,
+            isPaid ? rec.paidDate || '' : '',
+            proofText,
+            (isPaid && rec.note) || b.note || '',
+          ]);
+        });
+      }
+
+      const csvContent = '\uFEFF' + rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${y}年度_費用繳納彙整表.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`已匯出 ${y} 年度 CSV 報表`, 'success');
+    }
+
+    function exportBackupJSON() {
+      const payload = JSON.stringify({
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        bills: state.bills,
+        payments: state.payments,
+        categories: state.categories,
+        reminderSettings: state.reminderSettings,
+      }, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `費用檢核表備份_${formatDateISO(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已下載 JSON 備份檔案', 'success');
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed.bills) || typeof parsed.payments !== 'object') {
+            throw new Error('格式不符');
+          }
+          state.bills = parsed.bills;
+          state.payments = parsed.payments;
+          if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+            state.categories = parsed.categories;
+          }
+          if (parsed.reminderSettings) {
+            state.reminderSettings = { ...state.reminderSettings, ...parsed.reminderSettings };
+          }
+          saveData();
+          initCategorySelects();
+          refreshCurrentView();
+          showToast('資料已成功匯入還原！', 'success');
+        } catch (err) {
+          showToast('匯入失敗：檔案格式不正確。', 'error');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function confirmResetDemo() {
+      openConfirmModal(
+        '確定要重設為範例資料？',
+        '這將會清除目前所有自訂費用項目與已上傳的繳費證明，並恢復為初始範例資料。',
+        '確定重設',
+        () => {
+          const demo = createDemoData();
+          state.bills = demo.bills;
+          state.payments = demo.payments;
+          saveData();
+          refreshCurrentView();
+          showToast('已重設為範例資料', 'info');
+        }
+      );
+    }
+
+    // =========================================================================
+    // 10. 通用確認彈窗 & Toast 通知
+    // =========================================================================
+    function openConfirmModal(title, message, okText, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      document.getElementById('confirm-ok-btn').textContent = okText;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    }
+
+    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+      if (typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
+      closeConfirmModal();
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-white',
+      };
+      const el = document.createElement('div');
+      el.className = `toast-enter pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center justify-between gap-3 ${colors[type] || colors.info}`;
+      el.textContent = message;
+      container.appendChild(el);
+
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => el.remove(), 260);
+      }, 3200);
+    }
+
+    function refreshCurrentView() {
+      if (state.activeTab === 'monthly') renderMonthlyView();
+      if (state.activeTab === 'annual') renderAnnualView();
+      if (state.activeTab === 'manage') renderManageView();
+      if (state.activeTab === 'settings') renderSettingsView();
+      updateReminderIndicators();
+    }
+
+    // =========================================================================
+    // 11. 初始化應用程式
+    // =========================================================================
+    function initCategorySelects() {
+      const billCatSel = document.getElementById('bill-category');
+      const monthlyCatSel = document.getElementById('monthly-filter-cat');
+      const manageCatSel = document.getElementById('manage-filter-cat');
+
+      const prevBill = billCatSel.value;
+      const prevMonthly = monthlyCatSel.value;
+      const prevManage = manageCatSel.value;
+
+      billCatSel.innerHTML = '';
+      monthlyCatSel.innerHTML = '<option value="all">全部分類</option>';
+      manageCatSel.innerHTML = '<option value="all">全部分類</option>';
+
+      state.categories.forEach((c) => {
+        billCatSel.add(new Option(c.label, c.id));
+        monthlyCatSel.add(new Option(c.label, c.id));
+        manageCatSel.add(new Option(c.label, c.id));
+      });
+
+      if (prevBill) billCatSel.value = prevBill;
+      if (prevMonthly) monthlyCatSel.value = prevMonthly;
+      if (prevManage) manageCatSel.value = prevManage;
+    }
+
+    // 點擊遮罩或按 ESC 關閉彈窗
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeBillModal();
+        closePaymentModal();
+        closeProofViewer();
+        closeConfirmModal();
+        closeReminderModal();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      initCategorySelects();
+      checkAuthSession();
+    });
+  </script>
+</body>
+</html>
